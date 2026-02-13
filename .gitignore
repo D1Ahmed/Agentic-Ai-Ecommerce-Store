@@ -1,0 +1,26 @@
+# --- OS / IDE Files ---
+.DS_Store
+.vscode/
+.idea/
+*.log
+
+# --- Frontend (Next.js) ---
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# --- Backend (Python) ---
+backend/__pycache__/
+backend/*.py[cod]
+backend/venv/
+backend/.env
+backend/.pytest_cache/
+
+# --- Database ---
+# If you ever use SQLite, don't push the DB file
+*.sqlite3
