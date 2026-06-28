@@ -225,9 +225,9 @@ export default function CartPage() {
             <ArrowLeft size={16} />
             {isCheckingOut ? "Back to Bag" : "Continue Shopping"}
           </button>
-          <div className="font-black text-2xl tracking-tighter uppercase italic">
+          <Link href="/" className="font-black text-2xl tracking-tighter uppercase italic hover:opacity-80 transition-opacity">
             HD<span className="text-blue-600">wear</span>
-          </div>
+          </Link>
           <div className="w-24"></div>
         </div>
       </header>

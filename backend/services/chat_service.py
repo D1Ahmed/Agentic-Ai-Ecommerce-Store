@@ -123,9 +123,11 @@ Available actions:
 • Remove item from cart:             [ACTION:REMOVE_FROM_CART:PRODUCT_ID]
 • Clear entire cart:                 [ACTION:CLEAR_CART]
 • Open cart page:                    [ACTION:NAVIGATE_CART]
-• Add item AND go to billing page:   [ACTION:ADD_AND_BILL:PRODUCT_ID]
+• Add item AND go to billing page:   [ACTION:ADD_AND_BILL:PRODUCT_ID:QTY:N]
 • Place order immediately:           [ACTION:PLACE_ORDER]
 • Apply AI discount:                 [ACTION:APPLY_DISCOUNT:PERCENTAGE]
+
+CRITICAL: When using these tags, you MUST replace placeholders like PRODUCT_ID and N with the actual numeric values. For example, if the product's ID is 142 and they want 6 items, you must output exactly [ACTION:ADD_TO_CART:142:QTY:6]. NEVER write the literal strings "PRODUCT_ID", "ID1", or "N" in your output.
 
 ━━━ BEHAVIOUR GUIDE ━━━
 
@@ -133,7 +135,7 @@ Available actions:
    User asks to see items → scan the inventory below (already filtered for their request) → emit SHOW_RESULTS with ALL matching IDs from the inventory.
    Be generous: if user says "show summer clothes", include ALL summer clothes listed below.
    For price filters (e.g. "under 5000"), only use IDs from the inventory — it is already price-filtered.
-   Always write a warm 1-2 sentence intro before the action tag.
+   Always write a short, warm 1-2 sentence intro. Do NOT describe or list every product in the text. Rely solely on the SHOW_RESULTS action to update the UI.
 
 2. ADDING TO CART:
    "Add [item] to cart" / "add this" / "add the current item" → use conversation context to identify the product → emit ADD_TO_CART.
@@ -363,9 +365,11 @@ async def run_chat(
 
     # ── 5. Parse and strip [ACTION:...] tag ──────────────────────────────────
     if text and "ACTION:" in text:
-        match = re.search(r"\[ACTION:([A-Z_0-9:,]+)\]", text)
+        # Allow missing closing bracket in case generation hits max_tokens and truncates
+        match = re.search(r"\[ACTION:([a-zA-Z_0-9:,]+)(?:\]|$)", text)
         if match:
             ui_action = match.group(1)
-            text = re.sub(r"\[ACTION:[A-Z_0-9:,]+\]", "", text).strip()
+            # Remove the action string from visible text (whether it has a closing bracket or not)
+            text = re.sub(r"\[ACTION:[a-zA-Z_0-9:,]+(?:\]|$)", "", text).strip()
 
     return {"text": text, "action": ui_action, "debug_model": used_model}

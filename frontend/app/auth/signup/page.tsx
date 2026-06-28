@@ -59,7 +59,7 @@ export default function SignUpPage() {
               minLength={2}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-900 font-medium focus:ring-2 focus:ring-blue-600 outline-none"
               placeholder="Your name"
             />
           </div>
@@ -72,7 +72,7 @@ export default function SignUpPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-900 font-medium focus:ring-2 focus:ring-blue-600 outline-none"
               placeholder="you@example.com"
             />
           </div>
@@ -86,7 +86,7 @@ export default function SignUpPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-900 font-medium focus:ring-2 focus:ring-blue-600 outline-none"
               placeholder="At least 6 characters"
             />
           </div>

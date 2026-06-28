@@ -81,7 +81,7 @@ export default function Navbar({
             New Arrivals
           </Link>
           <Link
-            href="/collections"
+            href="/#collections"
             className={`hover:text-blue-600 transition-all ${
               isActive("/collections")
                 ? transparent

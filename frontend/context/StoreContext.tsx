@@ -472,7 +472,13 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (action.startsWith("ADD_AND_BILL:")) {
-      const productId = parseInt(action.replace("ADD_AND_BILL:", ""));
+      const parts = action.split(":");
+      const productId = parseInt(parts[1]);
+      const qtyToAdd =
+        parts.length >= 4 && parts[2].toUpperCase() === "QTY"
+          ? parseInt(parts[3]) || 1
+          : 1;
+
       const productToAdd = products.find((p) => p.id === productId);
       if (productToAdd) {
         setCart((prev) => {
@@ -480,11 +486,11 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           if (existing) {
             return prev.map((item) =>
               item.id === productId
-                ? { ...item, quantity: item.quantity + 1 }
+                ? { ...item, quantity: item.quantity + qtyToAdd }
                 : item,
             );
           }
-          return [...prev, { ...productToAdd, quantity: 1 }];
+          return [...prev, { ...productToAdd, quantity: qtyToAdd }];
         });
         setForceBillingView(true);
         router.push("/cart");
