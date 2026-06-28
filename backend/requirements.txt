@@ -1,4 +1,4 @@
-faiss==1.5.3
+faiss-cpu
 fastapi==0.138.1
 groq==1.5.0
 httpx==0.28.1
