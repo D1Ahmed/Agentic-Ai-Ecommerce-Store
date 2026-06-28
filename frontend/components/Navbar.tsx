@@ -232,37 +232,39 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Premium Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="absolute top-20 left-0 w-full bg-white border-b border-slate-200 shadow-2xl lg:hidden flex flex-col z-[110]">
-          <Link
-            href="/new-arrivals"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="px-6 py-4 text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-100 hover:bg-slate-50 transition-colors"
-          >
-            New Arrivals
-          </Link>
-          <Link
-            href="/#collections"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="px-6 py-4 text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-100 hover:bg-slate-50 transition-colors"
-          >
-            Collections
-          </Link>
-          <Link
-            href="/shoes"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="px-6 py-4 text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-100 hover:bg-slate-50 transition-colors"
-          >
-            Shoes
-          </Link>
-          <Link
-            href="/sale"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="px-6 py-4 text-sm font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors"
-          >
-            Sale
-          </Link>
+        <div className="fixed inset-0 top-20 w-full h-[calc(100dvh-5rem)] bg-slate-900/95 backdrop-blur-2xl border-t border-white/10 lg:hidden flex flex-col z-[110] animate-in slide-in-from-top-4 duration-300">
+          <div className="flex flex-col p-6 gap-2">
+            <Link
+              href="/new-arrivals"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="px-6 py-5 text-xl font-black uppercase tracking-[0.2em] text-white border-b border-white/10 hover:text-blue-500 hover:bg-white/5 transition-all rounded-xl"
+            >
+              New Arrivals
+            </Link>
+            <Link
+              href="/#collections"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="px-6 py-5 text-xl font-black uppercase tracking-[0.2em] text-white border-b border-white/10 hover:text-blue-500 hover:bg-white/5 transition-all rounded-xl"
+            >
+              Collections
+            </Link>
+            <Link
+              href="/shoes"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="px-6 py-5 text-xl font-black uppercase tracking-[0.2em] text-white border-b border-white/10 hover:text-blue-500 hover:bg-white/5 transition-all rounded-xl"
+            >
+              Shoes
+            </Link>
+            <Link
+              href="/sale"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="px-6 py-5 text-xl font-black uppercase tracking-[0.2em] text-red-500 hover:text-red-400 hover:bg-white/5 transition-all rounded-xl"
+            >
+              Sale
+            </Link>
+          </div>
         </div>
       )}
     </nav>
