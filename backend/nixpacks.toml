@@ -1,6 +1,0 @@
-[providers]
-python = "3.13"
-node = "20"
-
-[phases.build]
-cmds = ["python -m prisma generate"]
