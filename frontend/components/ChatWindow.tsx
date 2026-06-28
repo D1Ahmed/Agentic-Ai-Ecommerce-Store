@@ -108,7 +108,7 @@ export default function ChatWindow() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-8 right-8 bg-slate-900 text-white p-5 rounded-full shadow-[0_20px_60px_rgba(0,0,0,0.35)] hover:bg-blue-600 hover:scale-110 transition-all z-[9999] group flex items-center gap-3 border border-white/10"
+          className="fixed bottom-4 right-4 md:bottom-8 md:right-8 bg-slate-900 text-white p-4 md:p-5 rounded-full shadow-[0_20px_60px_rgba(0,0,0,0.35)] hover:bg-blue-600 hover:scale-110 transition-all z-[9999] group flex items-center gap-3 border border-white/10"
         >
           <Sparkles
             size={24}
@@ -122,7 +122,7 @@ export default function ChatWindow() {
 
       {/* ── Chat window ─────────────────────────────────────────────────────── */}
       {isOpen && (
-        <div className="fixed bottom-8 right-8 w-[440px] h-[640px] bg-white rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] border border-slate-100 flex flex-col z-[9999] overflow-hidden">
+        <div className="fixed inset-0 w-full h-[100dvh] md:inset-auto md:bottom-8 md:right-8 md:w-[440px] md:h-[640px] bg-white md:rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] border border-slate-100 flex flex-col z-[9999] overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white flex justify-between items-center flex-shrink-0">
             <div className="flex items-center gap-3">
