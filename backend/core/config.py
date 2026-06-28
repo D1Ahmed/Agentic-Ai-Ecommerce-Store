@@ -45,7 +45,11 @@ DEEPSEEK_MODELS = [
 # ── CORS ──────────────────────────────────────────────────────────────────────
 CORS_ORIGINS = [
     "http://localhost:3000",
+    "https://hdwear.vercel.app",
 ]
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    CORS_ORIGINS.append(frontend_url)
 
 # ── Database ──────────────────────────────────────────────────────────────────
 DATABASE_URL: str = os.getenv("DATABASE_URL", "")

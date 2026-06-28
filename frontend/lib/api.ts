@@ -8,7 +8,7 @@ import type {
   CartItem,
 } from "@/types";
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const TOKEN_KEY = "hdwear_token";
 const GUEST_CART_KEY = "hdwear_guest_cart";
 const STORED_USER_KEY = "hdwear_user";
