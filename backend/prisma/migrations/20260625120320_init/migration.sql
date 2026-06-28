@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN     "detailed_description" TEXT,
+ADD COLUMN     "rating" DOUBLE PRECISION NOT NULL DEFAULT 4.5,
+ADD COLUMN     "reviews_count" INTEGER NOT NULL DEFAULT 12,
+ADD COLUMN     "stock" INTEGER NOT NULL DEFAULT 10;
