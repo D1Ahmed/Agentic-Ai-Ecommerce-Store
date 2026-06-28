@@ -11,3 +11,6 @@ uvicorn==0.40.0
 prisma==0.15.0
 google-auth
 requests
+email-validator
+PyJWT
+python-multipart
