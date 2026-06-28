@@ -39,8 +39,19 @@ export default function ShoesPage() {
     return result;
   }, [shoeProductsFromDB, activeCategory, sortOption]);
 
-  const addToCart = (product: any) =>
-    setCart((prev: any) => [...prev, product]);
+  const addToCart = (product: any) => {
+    setCart((prev: any) => {
+      const existingItem = prev.find((item: any) => item.id === product.id);
+      if (existingItem) {
+        return prev.map((item: any) =>
+          item.id === product.id
+            ? { ...item, quantity: (item.quantity || 1) + 1 }
+            : item,
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
 
   if (!products || products.length === 0) {
     return (

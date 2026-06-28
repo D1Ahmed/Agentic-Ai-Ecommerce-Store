@@ -10,7 +10,7 @@ export default function Navbar({
 }: {
   transparent?: boolean;
 }) {
-  const { cart, user, isAuthenticated, logout } = useStore();
+  const { cart, user, isAuthenticated, isAuthLoading, logout } = useStore();
   const pathname = usePathname();
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -165,20 +165,23 @@ export default function Navbar({
 
         <div className="relative" ref={profileRef}>
           <button
-            onClick={() => setIsProfileOpen((open) => !open)}
+            onClick={() => !isAuthLoading && setIsProfileOpen((open) => !open)}
             className={`p-3 rounded-full transition-all duration-500 shadow-lg ${
               transparent
                 ? "bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-black"
-                : isAuthenticated
-                  ? "bg-blue-600 text-white hover:bg-slate-900"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : isAuthLoading
+                  ? "bg-slate-200 text-slate-400 cursor-wait animate-pulse"
+                  : isAuthenticated
+                    ? "bg-blue-600 text-white hover:bg-slate-900"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
-            title={isAuthenticated ? user?.name : "Account"}
+            title={isAuthLoading ? "Loading..." : isAuthenticated ? user?.name : "Account"}
+            disabled={isAuthLoading}
           >
             <User size={20} />
           </button>
 
-          {isProfileOpen && (
+          {isProfileOpen && !isAuthLoading && (
             <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden z-[200]">
               {isAuthenticated ? (
                 <>

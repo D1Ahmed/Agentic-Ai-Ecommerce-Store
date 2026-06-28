@@ -43,13 +43,29 @@ async def get_user_cart(user_id: int) -> List[dict]:
 
 
 async def sync_user_cart(user_id: int, items: List[dict]) -> List[dict]:
-    """Replace the user's cart with the provided items."""
+    """Replace the user's cart with the provided items.
+    
+    IMPORTANT: If items is empty, we do NOT wipe the cart.
+    An empty sync is treated as a no-op to prevent accidental data loss
+    from race conditions on the frontend.
+    """
+    if not items:
+        # Never wipe the cart with an empty list — return current cart instead
+        return await get_user_cart(user_id)
+
     async with get_db() as db:
         await db.usercartitem.delete_many(where={"user_id": user_id})
 
+        merged_items = {}
         for item in items:
             product_id = int(item["product_id"])
             quantity = max(1, int(item.get("quantity", 1)))
+            if product_id in merged_items:
+                merged_items[product_id] += quantity
+            else:
+                merged_items[product_id] = quantity
+
+        for product_id, quantity in merged_items.items():
             product = await db.product.find_unique(where={"id": product_id})
             if not product:
                 continue

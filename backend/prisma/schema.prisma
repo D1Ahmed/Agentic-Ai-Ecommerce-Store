@@ -24,6 +24,7 @@ model Product {
   rating               Float          @default(4.5)
   reviews_count        Int            @default(12)
   cartItems            UserCartItem[]
+  orderItems           OrderItem[]
 }
 
 model User {
@@ -31,10 +32,14 @@ model User {
   email         String         @unique
   password_hash String
   name          String
+  google_id     String?        @unique
+  address       String?
+  phone_number  String?
   created_at    DateTime       @default(now())
   updated_at    DateTime       @updatedAt
   sessions      Session[]
   cartItems     UserCartItem[]
+  orders        Order[]
 }
 
 model Session {
@@ -57,4 +62,25 @@ model UserCartItem {
   product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, product_id])
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  user_id    Int
+  total      Float
+  status     String      @default("pending")
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+  user       User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  items      OrderItem[]
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  order_id   Int
+  product_id Int
+  quantity   Int
+  price      Float
+  order      Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 }

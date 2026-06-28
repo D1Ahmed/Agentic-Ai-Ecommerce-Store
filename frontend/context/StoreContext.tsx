@@ -18,20 +18,35 @@ import {
   fetchMe,
   fetchCart,
   syncCart,
+  clearCart,
   getStoredToken,
   setStoredToken,
   getGuestCart,
   setGuestCart,
+  googleLoginUser,
+  updateUserProfile,
+  getStoredUser,
+  setStoredUser,
+  getStoredCart,
+  setStoredCart,
 } from "@/lib/api";
 import type { Product, CartItem, User } from "@/types";
 
 const StoreContext = createContext<any>(null);
 
 export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
+  // ── Optimistic initial state from localStorage ──────────────────────────────
+  // Read user and cart from localStorage synchronously on first render.
+  // This means the UI shows the correct auth state INSTANTLY with zero flash.
+  const cachedUser = getStoredUser();
+  const cachedCart = cachedUser ? getStoredCart() : getGuestCart();
+
   const [products, setProducts] = useState<Product[]>([]);
-  const [cart, setCartState] = useState<CartItem[]>([]);
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [cart, setCartState] = useState<CartItem[]>(cachedCart);
+  const [user, setUser] = useState<User | null>(cachedUser);
+  // If we have a cached user, we don't need to show the loading state —
+  // we're optimistically showing them as logged in while we validate in background.
+  const [isAuthLoading, setIsAuthLoading] = useState(!cachedUser && !!getStoredToken());
   const [isHaggleMode, setIsHaggleMode] = useState(false);
   const [aiSearchResults, setAiSearchResults] = useState<Product[]>([]);
   const [forceBillingView, setForceBillingView] = useState(false);
@@ -40,49 +55,74 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   const placingOrderRef = useRef(false);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const skipCartSyncRef = useRef(false);
+  const latestCartRef = useRef<CartItem[]>(cachedCart);
   const router = useRouter();
+
+  // cartReadyRef: true once the authoritative cart has been loaded/set.
+  // Sync is BLOCKED while this is false to prevent empty-cart wipes.
+  const cartReadyRef = useRef(!!cachedUser); // If we have a cached user+cart, we can consider ready
+  // cartDirtyRef: true only when the USER changed the cart (not a server load).
+  const cartDirtyRef = useRef(false);
+
+  // Keep latestCartRef in sync
+  useEffect(() => {
+    latestCartRef.current = cart;
+  }, [cart]);
 
   const isAuthenticated = !!user;
 
+  // Persist guest cart to localStorage
   const persistGuestCart = useCallback((items: CartItem[]) => {
     if (!getStoredToken()) {
       setGuestCart(items);
     }
   }, []);
 
+  // Central cart setter
   const setCart = useCallback(
     (updater: CartItem[] | ((prev: CartItem[]) => CartItem[])) => {
       setCartState((prev) => {
         const next = typeof updater === "function" ? updater(prev) : updater;
         persistGuestCart(next);
+        if (cartReadyRef.current) {
+          cartDirtyRef.current = true;
+          // Also persist server cart to localStorage for next-load optimism
+          if (getStoredToken()) {
+            setStoredCart(next);
+          }
+        }
         return next;
       });
     },
     [persistGuestCart],
   );
 
-  const scheduleCartSync = useCallback((items: CartItem[]) => {
+  // Debounced server sync
+  const scheduleCartSync = useCallback(() => {
     if (!getStoredToken()) return;
+    if (!cartReadyRef.current) return;
+    if (!cartDirtyRef.current) return;
+
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(async () => {
+      if (!cartDirtyRef.current) return;
+      cartDirtyRef.current = false;
       try {
-        const synced = await syncCart(items);
-        skipCartSyncRef.current = true;
-        setCartState(synced);
+        const itemsToSync = latestCartRef.current;
+        if (itemsToSync.length === 0) return; // backend guard too, but skip early
+        await syncCart(itemsToSync);
       } catch (err) {
         console.error("Cart sync failed", err);
       }
-    }, 400);
+    }, 600);
   }, []);
 
+  // Trigger sync on cart changes (only when ready + dirty)
   useEffect(() => {
     if (!user) return;
-    if (skipCartSyncRef.current) {
-      skipCartSyncRef.current = false;
-      return;
-    }
-    scheduleCartSync(cart);
+    if (!cartReadyRef.current) return;
+    if (!cartDirtyRef.current) return;
+    scheduleCartSync();
   }, [cart, user, scheduleCartSync]);
 
   const loadProducts = async () => {
@@ -94,28 +134,48 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Background session validation — runs after optimistic render
   const loadSession = async () => {
-    setIsAuthLoading(true);
     const token = getStoredToken();
+
     if (!token) {
-      skipCartSyncRef.current = true;
-      setCartState(getGuestCart());
+      // Guest — cart already loaded from localStorage above
+      if (!cachedUser) {
+        cartReadyRef.current = true;
+        cartDirtyRef.current = false;
+      }
       setIsAuthLoading(false);
       return;
     }
 
+    // If we already showed the user optimistically (cachedUser), this runs
+    // silently in the background to validate the token and get fresh data.
     try {
-      const me = await fetchMe();
+      const [me, serverCart] = await Promise.all([fetchMe(), fetchCart()]);
+
+      // Update with fresh server data — close the gate first
+      cartReadyRef.current = false;
+      cartDirtyRef.current = false;
+
       setUser(me);
-      const serverCart = await fetchCart();
-      skipCartSyncRef.current = true;
+      setStoredUser(me); // Keep localStorage in sync
       setCartState(serverCart);
+      setStoredCart(serverCart); // Cache fresh cart
+      latestCartRef.current = serverCart;
       setGuestCart([]);
+
+      cartReadyRef.current = true;
     } catch {
+      // Token is invalid — clear everything
       setStoredToken(null);
+      setStoredUser(null);
+      setStoredCart([]);
       setUser(null);
-      skipCartSyncRef.current = true;
-      setCartState(getGuestCart());
+      const guestCart = getGuestCart();
+      setCartState(guestCart);
+      latestCartRef.current = guestCart;
+      cartReadyRef.current = true;
+      cartDirtyRef.current = false;
     } finally {
       setIsAuthLoading(false);
     }
@@ -146,7 +206,6 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     const res = await loginUser({ email, password });
     setStoredToken(res.token);
-    setUser(res.user);
 
     const guestItems = getGuestCart();
     let serverCart = await fetchCart();
@@ -155,35 +214,90 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       serverCart = await syncCart(merged);
       setGuestCart([]);
     }
-    skipCartSyncRef.current = true;
+
+    cartReadyRef.current = false;
+    cartDirtyRef.current = false;
     setCartState(serverCart);
+    latestCartRef.current = serverCart;
+    setStoredUser(res.user);
+    setStoredCart(serverCart);
+    setUser(res.user);
+    cartReadyRef.current = true;
+
     return res.user;
   };
 
   const register = async (name: string, email: string, password: string) => {
     const res = await registerUser({ name, email, password });
     setStoredToken(res.token);
-    setUser(res.user);
 
     const guestItems = getGuestCart();
+    let finalCart: CartItem[] = [];
     if (guestItems.length > 0) {
-      const synced = await syncCart(guestItems);
-      skipCartSyncRef.current = true;
-      setCartState(synced);
+      finalCart = await syncCart(guestItems);
       setGuestCart([]);
-    } else {
-      skipCartSyncRef.current = true;
-      setCartState([]);
     }
+
+    cartReadyRef.current = false;
+    cartDirtyRef.current = false;
+    setCartState(finalCart);
+    latestCartRef.current = finalCart;
+    setStoredUser(res.user);
+    setStoredCart(finalCart);
+    setUser(res.user);
+    cartReadyRef.current = true;
+
     return res.user;
   };
 
+  const googleLogin = async (credential: string) => {
+    const res = await googleLoginUser(credential);
+    setStoredToken(res.token);
+
+    const guestItems = getGuestCart();
+    let serverCart = await fetchCart();
+    if (guestItems.length > 0) {
+      const merged = mergeCarts(guestItems, serverCart);
+      serverCart = await syncCart(merged);
+      setGuestCart([]);
+    }
+
+    cartReadyRef.current = false;
+    cartDirtyRef.current = false;
+    setCartState(serverCart);
+    latestCartRef.current = serverCart;
+    setStoredUser(res.user);
+    setStoredCart(serverCart);
+    setUser(res.user);
+    cartReadyRef.current = true;
+
+    return res.user;
+  };
+
+  const updateProfile = async (address?: string, phone_number?: string) => {
+    const updatedUser = await updateUserProfile({ address, phone_number });
+    setUser(updatedUser);
+    setStoredUser(updatedUser); // Keep cache in sync
+    return updatedUser;
+  };
+
   const logout = async () => {
-    await logoutUser();
-    setStoredToken(null);
-    setUser(null);
-    setCartState([]);
-    setDiscountPercentage(0);
+    try {
+      await logoutUser();
+    } catch (err) {
+      console.error("Backend logout failed, proceeding with local logout", err);
+    } finally {
+      setStoredToken(null);
+      setStoredUser(null);
+      setStoredCart([]);
+      cartReadyRef.current = false;
+      cartDirtyRef.current = false;
+      setUser(null);
+      setCartState([]);
+      latestCartRef.current = [];
+      cartReadyRef.current = true;
+      setDiscountPercentage(0);
+    }
   };
 
   const promptSignIn = useCallback(async (): Promise<boolean> => {
@@ -216,9 +330,23 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshCartStock = useCallback(async () => {
     if (!getStoredToken()) return;
     try {
-      const synced = await fetchCart();
-      skipCartSyncRef.current = true;
-      setCartState(synced);
+      const serverItems = await fetchCart();
+      setCartState((prev) => {
+        const updated = prev.map((item) => {
+          const serverMatch = serverItems.find((s) => s.id === item.id);
+          if (serverMatch) {
+            return {
+              ...item,
+              stock: serverMatch.stock,
+              out_of_stock: serverMatch.out_of_stock,
+              insufficient_stock: serverMatch.stock < item.quantity,
+            };
+          }
+          return item;
+        });
+        return updated;
+      });
+      // Don't mark dirty — this is a read not a user change
     } catch (err) {
       console.error("Failed to refresh cart stock", err);
     }
@@ -251,9 +379,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         items: cart.map((item) => ({ id: item.id, quantity: item.quantity })),
       });
 
-      setCart([]);
-      setDiscountPercentage(0);
+      cartDirtyRef.current = false;
+      setCartState([]);
+      latestCartRef.current = [];
       setGuestCart([]);
+      setStoredCart([]);
+      setDiscountPercentage(0);
       await loadProducts();
 
       await Swal.fire({
@@ -277,6 +408,46 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         confirmButtonColor: "#ef4444",
       });
       await refreshCartStock();
+    } finally {
+      placingOrderRef.current = false;
+      setIsPlacingOrder(false);
+    }
+  };
+
+  // Individual / partial order — buys specific items and keeps the rest of the cart
+  const placePartialOrder = async (itemsToBuy: CartItem[]): Promise<void> => {
+    if (!isAuthenticated) {
+      await promptSignIn();
+      return;
+    }
+    if (itemsToBuy.length === 0 || placingOrderRef.current) return;
+
+    placingOrderRef.current = true;
+    setIsPlacingOrder(true);
+
+    try {
+      await placeOrder(
+        { items: itemsToBuy.map((item) => ({ id: item.id, quantity: item.quantity })) },
+        true, // partial=true — backend only removes these items from cart
+      );
+
+      // Remove purchased items from frontend cart state
+      const purchasedIds = new Set(itemsToBuy.map((i) => i.id));
+      const remaining = latestCartRef.current.filter((i) => !purchasedIds.has(i.id));
+
+      cartDirtyRef.current = false;
+      setCartState(remaining);
+      latestCartRef.current = remaining;
+      setStoredCart(remaining);
+
+      // If cart is now empty, explicitly clear backend cart
+      if (remaining.length === 0 && getStoredToken()) {
+        try { await clearCart(); } catch { /* best effort */ }
+      }
+
+      await loadProducts(); // Refresh stock counts
+    } catch (error: any) {
+      throw error; // Let the caller (cart page) handle the error UI
     } finally {
       placingOrderRef.current = false;
       setIsPlacingOrder(false);
@@ -394,12 +565,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         isAuthLoading,
         login,
         register,
+        googleLogin,
         logout,
         promptSignIn,
+        updateProfile,
         handleAIAction,
         isHaggleMode,
         fetchProducts: loadProducts,
         executeOrder,
+        placePartialOrder,
         isPlacingOrder,
         cartHasStockIssues,
         refreshCartStock,

@@ -3,15 +3,17 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
-import { LogIn, Loader2 } from "lucide-react";
+import { LogIn, Loader2, CheckCircle } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function SignInPage() {
-  const { login, isAuthenticated } = useStore();
+  const { login, googleLogin, isAuthenticated } = useStore();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   React.useEffect(() => {
     if (isAuthenticated) router.replace("/");
@@ -33,6 +35,24 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-20">
+      {/* Full-page loading overlay for Google sign-in */}
+      {googleLoading && (
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-2xl animate-pulse">
+            <CheckCircle size={28} className="text-white" />
+          </div>
+          <div className="text-center">
+            <p className="font-black text-xl uppercase tracking-widest text-slate-900">
+              Signing you in...
+            </p>
+            <p className="text-slate-500 text-sm mt-1">
+              Setting up your account
+            </p>
+          </div>
+          <Loader2 size={24} className="animate-spin text-blue-600 mt-2" />
+        </div>
+      )}
+
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-100 shadow-xl p-8 md:p-10">
         <div className="text-center mb-8">
           <div className="font-black text-3xl tracking-tighter uppercase italic mb-2">
@@ -56,7 +76,7 @@ export default function SignInPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none text-slate-900"
               placeholder="you@example.com"
             />
           </div>
@@ -70,7 +90,7 @@ export default function SignInPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none text-slate-900"
               placeholder="••••••••"
             />
           </div>
@@ -83,7 +103,7 @@ export default function SignInPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || googleLoading}
             className="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] hover:bg-blue-600 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? (
@@ -97,6 +117,38 @@ export default function SignInPage() {
             )}
           </button>
         </form>
+
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-slate-500 font-medium">Or continue with</span>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-center">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                if (credentialResponse.credential) {
+                  setError("");
+                  setGoogleLoading(true);
+                  try {
+                    await googleLogin(credentialResponse.credential);
+                    router.push("/");
+                  } catch (err: any) {
+                    setGoogleLoading(false);
+                    setError(err?.response?.data?.detail || "Google Login failed. Please try again.");
+                  }
+                }
+              }}
+              onError={() => {
+                setGoogleLoading(false);
+                setError("Google Login failed. Please try again.");
+              }}
+            />
+          </div>
+        </div>
 
         <p className="text-center text-sm text-slate-500 mt-6">
           New here?{" "}

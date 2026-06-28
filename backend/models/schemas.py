@@ -19,6 +19,15 @@ class UserResponse(BaseModel):
     id: int
     name: str
     email: str
+    address: Optional[str] = None
+    phone_number: Optional[str] = None
+
+class GoogleLoginRequest(BaseModel):
+    credential: str
+
+class UpdateProfileRequest(BaseModel):
+    address: Optional[str] = None
+    phone_number: Optional[str] = None
 
 
 class AuthResponse(BaseModel):

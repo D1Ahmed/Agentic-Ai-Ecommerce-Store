@@ -11,6 +11,8 @@ import type {
 const API_BASE_URL = "http://localhost:8000";
 const TOKEN_KEY = "hdwear_token";
 const GUEST_CART_KEY = "hdwear_guest_cart";
+const STORED_USER_KEY = "hdwear_user";
+const STORED_CART_KEY = "hdwear_server_cart";
 
 const api = axios.create({ baseURL: API_BASE_URL });
 
@@ -49,6 +51,42 @@ export function setGuestCart(items: CartItem[]) {
   if (typeof window === "undefined") return;
   if (items.length === 0) localStorage.removeItem(GUEST_CART_KEY);
   else localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
+}
+
+// ── Optimistic cached user (avoids auth flash on load) ────────────────────────
+
+export function getStoredUser(): User | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORED_USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: User | null) {
+  if (typeof window === "undefined") return;
+  if (user) localStorage.setItem(STORED_USER_KEY, JSON.stringify(user));
+  else localStorage.removeItem(STORED_USER_KEY);
+}
+
+// ── Optimistic cached server cart (avoids cart flash on load) ─────────────────
+
+export function getStoredCart(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORED_CART_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setStoredCart(items: CartItem[]) {
+  if (typeof window === "undefined") return;
+  if (items.length === 0) localStorage.removeItem(STORED_CART_KEY);
+  else localStorage.setItem(STORED_CART_KEY, JSON.stringify(items));
 }
 
 // ── Products ──────────────────────────────────────────────────────────────────
@@ -98,6 +136,19 @@ export async function fetchMe(): Promise<User> {
   return res.data;
 }
 
+export async function googleLoginUser(credential: string): Promise<AuthResponse> {
+  const res = await api.post<AuthResponse>("/auth/google", { credential });
+  return res.data;
+}
+
+export async function updateUserProfile(data: {
+  address?: string;
+  phone_number?: string;
+}): Promise<User> {
+  const res = await api.put<User>("/auth/profile", data);
+  return res.data;
+}
+
 // ── Cart ──────────────────────────────────────────────────────────────────────
 
 export async function fetchCart(): Promise<CartItem[]> {
@@ -117,8 +168,12 @@ export async function syncCart(items: CartItem[]): Promise<CartItem[]> {
 
 // ── Orders ────────────────────────────────────────────────────────────────────
 
-export async function placeOrder(order: OrderRequest): Promise<void> {
-  await api.post("/orders/place-order", order);
+export async function placeOrder(order: OrderRequest, partial = false): Promise<void> {
+  await api.post(`/orders/place-order${partial ? "?partial=true" : ""}`, order);
+}
+
+export async function clearCart(): Promise<void> {
+  await api.delete("/cart");
 }
 
 // ── AI Chat ───────────────────────────────────────────────────────────────────

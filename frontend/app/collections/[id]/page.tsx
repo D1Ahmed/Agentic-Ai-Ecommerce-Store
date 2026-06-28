@@ -169,10 +169,17 @@ export default function InspectionWindow() {
           <div className="space-y-4">
             <button
               onClick={() =>
-                setCart((prev: any) => [
-                  ...prev,
-                  { ...product, size: selectedSize },
-                ])
+                setCart((prev: any) => {
+                  const existingItem = prev.find((item: any) => item.id === product.id && item.size === selectedSize);
+                  if (existingItem) {
+                    return prev.map((item: any) =>
+                      item.id === product.id && item.size === selectedSize
+                        ? { ...item, quantity: (item.quantity || 1) + 1 }
+                        : item,
+                    );
+                  }
+                  return [...prev, { ...product, size: selectedSize, quantity: 1 }];
+                })
               }
               className="w-full bg-blue-600 text-white py-6 rounded-full font-black uppercase text-[11px] tracking-[0.4em] hover:bg-black transition-all shadow-2xl active:scale-95"
             >
