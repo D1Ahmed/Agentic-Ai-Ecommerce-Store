@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
-import { ShoppingBag, Search, X, User, LogOut, LogIn, UserPlus } from "lucide-react";
+import { ShoppingBag, Search, X, User, LogOut, LogIn, UserPlus, Menu } from "lucide-react";
 
 export default function Navbar({
   transparent = false,
@@ -16,6 +16,7 @@ export default function Navbar({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => pathname === path;
@@ -53,7 +54,17 @@ export default function Navbar({
           : "bg-white/80 backdrop-blur-xl border-b border-slate-200"
       }`}
     >
-      <div className="flex items-center gap-12">
+      <div className="flex items-center gap-4 lg:gap-12">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className={`lg:hidden p-2 rounded-lg transition-colors ${
+            transparent ? "text-white hover:bg-white/20" : "text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+
         <Link
           href="/"
           className={`font-black text-2xl tracking-tighter uppercase italic ${
@@ -220,6 +231,40 @@ export default function Navbar({
           )}
         </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="absolute top-20 left-0 w-full bg-white border-b border-slate-200 shadow-2xl lg:hidden flex flex-col z-[110]">
+          <Link
+            href="/new-arrivals"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="px-6 py-4 text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+          >
+            New Arrivals
+          </Link>
+          <Link
+            href="/#collections"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="px-6 py-4 text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+          >
+            Collections
+          </Link>
+          <Link
+            href="/shoes"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="px-6 py-4 text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+          >
+            Shoes
+          </Link>
+          <Link
+            href="/sale"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="px-6 py-4 text-sm font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors"
+          >
+            Sale
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }
