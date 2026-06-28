@@ -1,11 +1,6 @@
 [providers]
-node = "20"
 python = "3.13"
+node = "20"
 
 [phases.build]
-cmds = [
-  "npm install",
-  "npx prisma generate",
-  "pip install -r requirements.txt",
-  "prisma generate"
-]
+cmds = ["python -m prisma generate"]
