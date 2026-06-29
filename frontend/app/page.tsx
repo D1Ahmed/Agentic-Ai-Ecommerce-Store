@@ -47,7 +47,6 @@ export default function Home() {
             </button>
           </Link>
         </div>
-
         {/* Cinematic Vignette */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20 pointer-events-none" />
       </section>
@@ -62,14 +61,14 @@ export default function Home() {
             Explore our complete archive of premium apparel.
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
           {products.map((product: any) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </section>
-      
+
       {/* FOOTER */}
       <footer className="mt-20 py-20 bg-white border-t border-slate-200 text-center">
         <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.5em]">

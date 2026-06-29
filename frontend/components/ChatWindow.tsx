@@ -1,7 +1,9 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
 import { Send, X, Bot, Sparkles, ShoppingCart, Eye, Loader2 } from "lucide-react";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { sendChatMessage, type ChatHistoryMessage } from "@/lib/api";
@@ -13,6 +15,7 @@ interface Message {
 
 export default function ChatWindow() {
   const { handleAIAction, user } = useStore();
+  const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -20,8 +23,8 @@ export default function ChatWindow() {
 
   useEffect(() => {
     const greeting = user
-      ? `Welcome back, **${user.name}**! I'm **The Clerk**\n\n`
-      : "Welcome to HDwear! I'm **The Clerk**\n\n";
+      ? `Welcome back, **${user.name}**! I'm **HDwear Agent**\n\n`
+      : "Welcome to HDwear! I'm **HDwear Agent**\n\n";
     setMessages([
       {
         role: "ai",
@@ -38,6 +41,18 @@ export default function ChatWindow() {
   }, [user?.id, user?.name]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const [side, setSide] = useState<"right" | "left">("right");
+  const dragControls = useDragControls();
+
+  const handleDragEnd = (e: any, info: any) => {
+    // Threshold for snapping to the other side
+    if (side === "right" && info.offset.x < -100) {
+      setSide("left");
+    } else if (side === "left" && info.offset.x > 100) {
+      setSide("right");
+    }
+  };
 
   // Auto-scroll on new message
   useEffect(() => {
@@ -66,7 +81,7 @@ export default function ChatWindow() {
 
     try {
       const history = buildHistory();
-      const { text, action } = await sendChatMessage(userMsg, history, user?.name);
+      const { text, action } = await sendChatMessage(userMsg, history, user?.name, pathname);
 
       setMessages((prev) => [...prev, { role: "ai", text }]);
 
@@ -103,42 +118,70 @@ export default function ChatWindow() {
   ];
 
   return (
-    <>
+    <AnimatePresence>
       {/* ── Floating bubble ─────────────────────────────────────────────────── */}
-      {!isOpen && (
-        <button
+      {!isOpen ? (
+        <motion.button
+          key="bubble"
+          layoutId="chat-widget"
+          drag
+          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+          dragElastic={0.6}
+          onDragEnd={handleDragEnd}
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-4 right-4 md:bottom-8 md:right-8 bg-slate-900 text-white p-4 md:p-5 rounded-full shadow-[0_20px_60px_rgba(0,0,0,0.35)] hover:bg-blue-600 hover:scale-110 transition-all z-[9999] group flex items-center gap-3 border border-white/10"
+          className={`fixed bottom-4 md:bottom-8 z-[9999] bg-slate-900 text-white p-4 md:p-5 rounded-full shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition-colors flex items-center gap-3 border border-white/10 ${
+            side === "right" ? "right-4 md:right-8" : "left-4 md:left-8"
+          } cursor-grab active:cursor-grabbing hover:bg-blue-600 group`}
         >
           <Sparkles
             size={24}
             className="group-hover:rotate-12 transition-transform duration-500"
           />
           <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-700 font-black uppercase tracking-[0.3em] text-[10px] whitespace-nowrap">
-            Talk to Clerk
+            Talk to Agent
           </span>
-        </button>
-      )}
-
-      {/* ── Chat window ─────────────────────────────────────────────────────── */}
-      {isOpen && (
-        <div className="fixed inset-0 w-full h-[100dvh] md:inset-auto md:bottom-8 md:right-8 md:w-[440px] md:h-[640px] bg-white md:rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] border border-slate-100 flex flex-col z-[9999] overflow-hidden">
+        </motion.button>
+      ) : (
+        <motion.div 
+          key="window"
+          layoutId="chat-widget"
+          drag
+          dragControls={dragControls}
+          dragListener={false}
+          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+          dragElastic={0.6}
+          onDragEnd={handleDragEnd}
+          className={`fixed w-full h-[100dvh] md:w-[440px] md:h-[640px] bg-white md:rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] border border-slate-100 flex flex-col z-[9999] overflow-hidden ${
+            side === "right" ? "md:bottom-8 md:right-8" : "md:bottom-8 md:left-8"
+          }`}
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: { delay: 0.1, duration: 0.2 } }}
+            exit={{ opacity: 0, transition: { duration: 0.1 } }}
+            className="flex flex-col h-full"
+          >
           {/* Header */}
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white flex justify-between items-center flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2.5 rounded-full shadow-lg">
+          <div 
+            onPointerDown={(e) => dragControls.start(e)}
+            style={{ touchAction: "none" }}
+            className="bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white flex justify-between items-center flex-shrink-0 select-none cursor-grab active:cursor-grabbing"
+          >
+            <div className="flex items-center gap-3 pointer-events-none">
+              <div className="bg-blue-600 p-2.5 rounded-full shadow-lg pointer-events-auto">
                 <Sparkles size={16} className="text-white" />
               </div>
               <div>
                 <span className="font-black uppercase tracking-widest text-xs block leading-none">
-                  The Clerk
+                  HDwear Agent
                 </span>
-                <span className="text-[9px] text-slate-400 font-bold tracking-widest uppercase">
-                  RAG-Powered AI Concierge
+                <span className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-0.5 block">
+                  Your AI helper
                 </span>
               </div>
             </div>
             <button
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setIsOpen(false)}
               className="text-slate-400 hover:text-white transition-colors p-1"
             >
@@ -296,8 +339,9 @@ export default function ChatWindow() {
               Press Enter to send · Shift+Enter for new line
             </p>
           </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
-    </>
+    </AnimatePresence>
   );
 }

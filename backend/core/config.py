@@ -10,10 +10,15 @@ GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 COHERE_API_KEY: str = os.getenv("COHERE_API", "")
 
 # ── Groq AI ───────────────────────────────────────────────────────────────────
-# GROQ_API_TWO is the real gsk_ key → use as primary
-# GROQ_API_KEY  is the xai- key     → use as secondary fallback
-GROQ_API_PRIMARY: str = os.getenv("GROQ_API_TWO", "")
-GROQ_API_SECONDARY: str = os.getenv("GROQ_API_KEY", "")
+raw_groq_keys = os.getenv("GROQ_KEYS", "")
+if raw_groq_keys:
+    GROQ_KEYS = [k.strip() for k in raw_groq_keys.split(",") if k.strip()]
+else:
+    GROQ_KEYS = []
+    if os.getenv("GROQ_API_TWO"):
+        GROQ_KEYS.append(os.getenv("GROQ_API_TWO", ""))
+    if os.getenv("GROQ_API_KEY"):
+        GROQ_KEYS.append(os.getenv("GROQ_API_KEY", ""))
 
 # ── Zen AI & DeepSeek ─────────────────────────────────────────────────────────
 ZEN_API_KEY: str = os.getenv("ZEN_API", "")

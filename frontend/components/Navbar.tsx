@@ -13,6 +13,7 @@ export default function Navbar({
   const { cart, user, isAuthenticated, isAuthLoading, logout } = useStore();
   const pathname = usePathname();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -22,6 +23,7 @@ export default function Navbar({
   const isActive = (path: string) => pathname === path;
 
   useEffect(() => {
+    setMounted(true);
     const handleClickOutside = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setIsProfileOpen(false);
@@ -166,7 +168,7 @@ export default function Navbar({
             }`}
           >
             <ShoppingBag size={20} />
-            {cart.length > 0 && (
+            {mounted && cart.length > 0 && (
               <span className="absolute -top-1 -right-1 text-[9px] w-5 h-5 rounded-full flex items-center justify-center font-black border-2 bg-blue-600 text-white border-white">
                 {cart.length}
               </span>

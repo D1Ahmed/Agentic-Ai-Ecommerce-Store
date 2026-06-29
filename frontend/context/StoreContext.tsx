@@ -49,7 +49,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthLoading, setIsAuthLoading] = useState(!cachedUser && !!getStoredToken());
   const [isHaggleMode, setIsHaggleMode] = useState(false);
   const [aiSearchResults, setAiSearchResults] = useState<Product[]>([]);
-  const [forceBillingView, setForceBillingView] = useState(false);
+  const [forceBillingItemId, setForceBillingItemId] = useState<number | null>(null);
   const [discountPercentage, setDiscountPercentage] = useState(0);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
@@ -352,7 +352,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const executeOrder = async () => {
+  const executeOrder = async (city: string, province: string) => {
     if (cart.length === 0 || placingOrderRef.current) return;
 
     if (!isAuthenticated) {
@@ -377,6 +377,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await placeOrder({
         items: cart.map((item) => ({ id: item.id, quantity: item.quantity })),
+        city,
+        province,
       });
 
       cartDirtyRef.current = false;
@@ -415,7 +417,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Individual / partial order — buys specific items and keeps the rest of the cart
-  const placePartialOrder = async (itemsToBuy: CartItem[]): Promise<void> => {
+  const placePartialOrder = async (itemsToBuy: CartItem[], city: string, province: string): Promise<void> => {
     if (!isAuthenticated) {
       await promptSignIn();
       return;
@@ -427,7 +429,11 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       await placeOrder(
-        { items: itemsToBuy.map((item) => ({ id: item.id, quantity: item.quantity })) },
+        { 
+          items: itemsToBuy.map((item) => ({ id: item.id, quantity: item.quantity })),
+          city,
+          province
+        },
         true, // partial=true — backend only removes these items from cart
       );
 
@@ -492,7 +498,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           }
           return [...prev, { ...productToAdd, quantity: qtyToAdd }];
         });
-        setForceBillingView(true);
+        setForceBillingItemId(productId);
         router.push("/cart");
       }
       return;
@@ -584,8 +590,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         cartHasStockIssues,
         refreshCartStock,
         aiSearchResults,
-        forceBillingView,
-        setForceBillingView,
+        forceBillingItemId,
+        setForceBillingItemId,
         discountPercentage,
       }}
     >

@@ -42,6 +42,8 @@ export interface OrderItem {
 
 export interface OrderRequest {
   items: OrderItem[];
+  city?: string;
+  province?: string;
 }
 
 export interface ChatResponse {

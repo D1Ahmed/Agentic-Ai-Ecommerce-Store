@@ -27,8 +27,8 @@ export default function CartPage() {
   const {
     cart,
     setCart,
-    forceBillingView,
-    setForceBillingView,
+    forceBillingItemId,
+    setForceBillingItemId,
     discountPercentage,
     executeOrder,
     placePartialOrder,
@@ -44,11 +44,13 @@ export default function CartPage() {
   const router = useRouter();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   // null = buy all valid items; specific array = buy only those items (individual/partial)
-  const [checkoutItems, setCheckoutItems] = useState<any[] | null>(null);
+  const [checkoutItemIds, setCheckoutItemIds] = useState<number[] | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -66,15 +68,20 @@ export default function CartPage() {
   }, [isAuthenticated, refreshCartStock]);
 
   useEffect(() => {
-    if (!forceBillingView) return;
-    setForceBillingView(false);
+    if (!forceBillingItemId) return;
+    
     if (!isAuthenticated) {
       promptSignIn();
+      setForceBillingItemId(null);
       return;
     }
-    setCheckoutItems(null);
+    
+    setCheckoutItemIds([forceBillingItemId]);
     setIsCheckingOut(true);
-  }, [forceBillingView, setForceBillingView, isAuthenticated, promptSignIn]);
+    setForceBillingItemId(null);
+  }, [forceBillingItemId, setForceBillingItemId, isAuthenticated, promptSignIn]);
+
+
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -85,8 +92,21 @@ export default function CartPage() {
   const validItems = cart.filter((item: any) => !itemHasStockIssue(item));
   const invalidItems = cart.filter((item: any) => itemHasStockIssue(item));
 
+  useEffect(() => {
+    // If user deletes the items they are checking out, return to bag view
+    if (isCheckingOut && checkoutItemIds) {
+      const stillValid = validItems.filter((item: any) => checkoutItemIds.includes(item.id));
+      if (stillValid.length === 0) {
+        setIsCheckingOut(false);
+        setCheckoutItemIds(null);
+      }
+    }
+  }, [isCheckingOut, checkoutItemIds, validItems]);
+
   // The items that will actually be bought in the current checkout flow
-  const effectiveCheckoutItems = checkoutItems ?? validItems;
+  const effectiveCheckoutItems = checkoutItemIds
+    ? validItems.filter((item: any) => checkoutItemIds.includes(item.id))
+    : validItems;
 
   const removeFromCart = (itemId: number) => {
     setCart((prev: any[]) => prev.filter((item: any) => item.id !== itemId));
@@ -116,7 +136,7 @@ export default function CartPage() {
       });
       return;
     }
-    setCheckoutItems(null); // buy all valid items
+    setCheckoutItemIds(null); // buy all valid items
     setIsCheckingOut(true);
   };
 
@@ -125,7 +145,7 @@ export default function CartPage() {
       await promptSignIn();
       return;
     }
-    setCheckoutItems([item]);
+    setCheckoutItemIds([item.id]);
     setIsCheckingOut(true);
   };
 
@@ -154,10 +174,10 @@ export default function CartPage() {
 
   const handlePlaceOrder = async () => {
     if (isPlacingOrder || effectiveCheckoutItems.length === 0) return;
-    if (!address.trim() || !phoneNumber.trim()) {
+    if (!address.trim() || !phoneNumber.trim() || !city.trim() || !province) {
       Swal.fire({
         title: "Details Required",
-        text: "Please provide a valid phone number and shipping address to confirm your order.",
+        text: "Please provide your phone number, shipping address, city, and province to confirm your order.",
         icon: "warning",
         confirmButtonColor: "#2563eb",
       });
@@ -172,12 +192,12 @@ export default function CartPage() {
       }
     }
 
-    const isPartial = checkoutItems !== null;
+    const isPartial = checkoutItemIds !== null;
 
     if (isPartial) {
       // Individual item purchase
       try {
-        await placePartialOrder(effectiveCheckoutItems);
+        await placePartialOrder(effectiveCheckoutItems, city, province);
         await Swal.fire({
           title: "Order Confirmed!",
           text: `Your ${effectiveCheckoutItems.length === 1 ? "item has" : "items have"} been ordered successfully!`,
@@ -186,7 +206,7 @@ export default function CartPage() {
           confirmButtonText: "Back to Bag",
         });
         setIsCheckingOut(false);
-        setCheckoutItems(null);
+        setCheckoutItemIds(null);
       } catch (error: any) {
         const message =
           error?.response?.data?.detail ||
@@ -201,7 +221,7 @@ export default function CartPage() {
       }
     } else {
       // Full cart checkout — uses executeOrder from context which handles Swal + redirect
-      executeOrder();
+      executeOrder(city, province);
     }
   };
 
@@ -215,7 +235,7 @@ export default function CartPage() {
             onClick={() => {
               if (isCheckingOut) {
                 setIsCheckingOut(false);
-                setCheckoutItems(null);
+                setCheckoutItemIds(null);
               } else {
                 router.back();
               }
@@ -476,9 +496,9 @@ export default function CartPage() {
               <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
                 Billing Protocol
               </h1>
-              {checkoutItems !== null && (
+              {checkoutItemIds !== null && (
                 <p className="text-sm text-blue-600 font-bold mt-1">
-                  ⚡ Quick Buy — {checkoutItems.length === 1 ? "1 item" : `${checkoutItems.length} items`} selected
+                  ⚡ Quick Buy — {checkoutItemIds.length === 1 ? "1 item" : `${checkoutItemIds.length} items`} selected
                 </p>
               )}
             </div>
@@ -511,13 +531,36 @@ export default function CartPage() {
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-0.5">
                         {item.category}
                       </p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                          Qty: {item.quantity || 1}
-                        </span>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <div className="flex items-center gap-1 bg-white rounded border border-slate-200 overflow-hidden">
+                          <button
+                            onClick={() => updateQuantity(item.id, (item.quantity || 1) - 1)}
+                            disabled={(item.quantity || 1) <= 1}
+                            className="px-2 py-1 text-slate-500 hover:bg-slate-100 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <Minus size={10} />
+                          </button>
+                          <span className="px-2 font-bold text-xs text-slate-900 text-center">
+                            {item.quantity || 1}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
+                            disabled={(item.quantity || 1) >= (item.stock || 1)}
+                            className="px-2 py-1 text-slate-500 hover:bg-slate-100 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <Plus size={10} />
+                          </button>
+                        </div>
                         <span className="text-[10px] text-slate-400">
                           Rs {item.price.toLocaleString()} each
                         </span>
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="ml-1 flex items-center gap-1 text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded transition"
+                          title="Remove item"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
@@ -598,12 +641,45 @@ export default function CartPage() {
                     Shipping Address
                   </label>
                   <textarea
-                    placeholder="Street, City, Province"
-                    rows={3}
+                    placeholder="Street/House details"
+                    rows={2}
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 outline-none resize-none"
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Lahore"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                      Province *
+                    </label>
+                    <select
+                      value={province}
+                      onChange={(e) => setProvince(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 outline-none"
+                    >
+                      <option value="" disabled>Select Province</option>
+                      <option value="Punjab">Punjab</option>
+                      <option value="Sindh">Sindh</option>
+                      <option value="Khyber Pakhtunkhwa">Khyber Pakhtunkhwa</option>
+                      <option value="Balochistan">Balochistan</option>
+                      <option value="Gilgit-Baltistan">Gilgit-Baltistan</option>
+                      <option value="AJK">AJK</option>
+                      <option value="Islamabad Capital Territory">Islamabad</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

@@ -94,10 +94,7 @@ function CollectionsContent() {
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-slate-900">
             {searchInput ? (
               <>
-                Results for{" "}
-                <span className="text-blue-600">
-                  &ldquo;{searchInput}&rdquo;
-                </span>
+                Search <span className="text-blue-600">Results</span>
               </>
             ) : (
               <>

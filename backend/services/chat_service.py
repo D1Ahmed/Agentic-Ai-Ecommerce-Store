@@ -18,8 +18,7 @@ from typing import List
 from groq import Groq
 
 from core.config import (
-    GROQ_API_PRIMARY,
-    GROQ_API_SECONDARY,
+    GROQ_KEYS,
     GROQ_MODELS_PRIMARY,
     GROQ_MODELS_SECONDARY,
     ZEN_API_KEY,
@@ -28,11 +27,10 @@ from core.config import (
     DEEPSEEK_MODELS,
 )
 from models.schemas import ChatMessage
-from services.rag_service import retrieve, is_ready, init_catalog
+from services.rag_service import retrieve, is_ready, init_catalog, get_product_by_id
 
 # ── Groq clients (singletons) ─────────────────────────────────────────────────
-_groq_primary = Groq(api_key=GROQ_API_PRIMARY) if GROQ_API_PRIMARY else None
-_groq_secondary = Groq(api_key=GROQ_API_SECONDARY) if GROQ_API_SECONDARY else None
+_groq_clients = [Groq(api_key=key) for key in GROQ_KEYS]
 
 
 # ── Weather tool ──────────────────────────────────────────────────────────────
@@ -105,13 +103,24 @@ _GROQ_TOOLS = [
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 
-def _build_system_prompt(inventory_text: str, user_name: str | None = None) -> str:
+def _build_system_prompt(inventory_text: str, user_name: str | None = None, current_path: str | None = None) -> str:
     greeting_note = ""
     if user_name:
         greeting_note = f"\nThe customer's name is {user_name}. Address them warmly by name when natural.\n"
 
+    context_note = ""
+    if current_path and current_path.startswith("/collections/"):
+        try:
+            prod_id = current_path.split("/")[-1]
+            if prod_id.isdigit():
+                context_note = f"\n[SYSTEM CONTEXT]: The user is currently viewing the page for Product ID: {prod_id}. If they say 'this product' or ask questions about it, DO NOT emit SHOW_RESULTS. Just answer their questions directly in the chat. Only emit SHOW_RESULTS if they explicitly ask to see *other* products.\n"
+        except:
+            pass
+
     return f"""You are "The Clerk" — the sharp, charismatic AI shopping assistant for HDwear, a premium Pakistani urban fashion brand. You speak English with occasional Urdu flair. All prices are in Pakistani Rupees (PKR / Rs).
 {greeting_note}
+{context_note}
+
 
 ━━━ CRITICAL ACTION RULES ━━━
 You MUST embed EXACTLY ONE action tag per response when performing an operation.
@@ -135,6 +144,7 @@ CRITICAL: When using these tags, you MUST replace placeholders like PRODUCT_ID a
    User asks to see items → scan the inventory below (already filtered for their request) → emit SHOW_RESULTS with ALL matching IDs from the inventory.
    Be generous: if user says "show summer clothes", include ALL summer clothes listed below.
    For price filters (e.g. "under 5000"), only use IDs from the inventory — it is already price-filtered.
+   DO NOT emit SHOW_RESULTS if the user is just asking a question about a product they are already looking at.
    Always write a short, warm 1-2 sentence intro. Do NOT describe or list every product in the text. Rely solely on the SHOW_RESULTS action to update the UI.
 
 2. ADDING TO CART:
@@ -161,6 +171,9 @@ CRITICAL: When using these tags, you MUST replace placeholders like PRODUCT_ID a
    *[one punchy sentence about why this fits their vibe]*
    [👉 View Details](/collections/[id])
 
+7. STRICT DOMAIN GUARDRAILS:
+   You are strictly an HDwear shopping assistant. You MUST NOT answer questions about coding, cooking, politics, general knowledge, or any topic unrelated to HDwear products and fashion. If a user asks something unrelated (e.g. "how to make tea"), politely decline and steer them back to shopping at HDwear.
+
 ━━━ RELEVANT INVENTORY (RAG-retrieved for this query) ━━━
 {inventory_text}
 """
@@ -168,8 +181,24 @@ CRITICAL: When using these tags, you MUST replace placeholders like PRODUCT_ID a
 
 # ── Inventory context from RAG ────────────────────────────────────────────────
 
-async def _build_inventory_text(query: str) -> str:
+async def _build_inventory_text(query: str, current_path: str | None = None) -> str:
     products = await retrieve(query)
+    
+    # Force include the current product context if on a product page
+    context_prod_id = None
+    if current_path and current_path.startswith("/collections/"):
+        try:
+            prod_id = current_path.split("/")[-1]
+            if prod_id.isdigit():
+                context_prod_id = int(prod_id)
+        except:
+            pass
+
+    if context_prod_id and not any(p.id == context_prod_id for p in products):
+        context_product = get_product_by_id(context_prod_id)
+        if context_product:
+            products.insert(0, context_product)
+
     if not products:
         return "(No products retrieved)"
 
@@ -253,6 +282,7 @@ async def run_chat(
     user_message: str,
     history: List[ChatMessage] | None = None,
     user_name: str | None = None,
+    current_path: str | None = None,
 ) -> dict:
     """
     Full RAG chat pipeline.
@@ -280,8 +310,8 @@ async def run_chat(
 
     try:
         # ── 1. RAG retrieval ─────────────────────────────────────────────────
-        inventory_text = await _build_inventory_text(user_message)
-        system_prompt = _build_system_prompt(inventory_text, user_name=user_name)
+        inventory_text = await _build_inventory_text(user_message, current_path=current_path)
+        system_prompt = _build_system_prompt(inventory_text, user_name=user_name, current_path=current_path)
 
         # ── 2. Build message list with conversation history ──────────────────
         messages = [{"role": "system", "content": system_prompt}]
@@ -295,33 +325,22 @@ async def run_chat(
 
         success = False
         
-        # ── 3. Try primary Groq client first ─────────────────────────────────
-        if _groq_primary:
+        # ── 3. Try Groq clients ───────────────────────────────────────────────
+        for idx, client in enumerate(_groq_clients):
+            if success:
+                break
             for model in GROQ_MODELS_PRIMARY:
                 try:
-                    print(f"[GROQ-PRIMARY] Trying {model}...")
-                    text = _call_groq(_groq_primary, model, messages)
-                    used_model = f"primary/{model}"
+                    print(f"[GROQ-{idx}] Trying {model}...")
+                    text = _call_groq(client, model, messages)
+                    used_model = f"groq-{idx}/{model}"
                     success = True
-                    print(f"[GROQ-PRIMARY] Success: {model}")
+                    print(f"[GROQ-{idx}] Success: {model}")
                     break
                 except Exception as e:
-                    print(f"[GROQ-PRIMARY] Failed {model}: {e}")
+                    print(f"[GROQ-{idx}] Failed {model}: {e}")
 
-        # ── 4. Fall back to secondary Groq client ────────────────────────────
-        if not success and _groq_secondary:
-            for model in GROQ_MODELS_SECONDARY:
-                try:
-                    print(f"[GROQ-SECONDARY] Trying {model}...")
-                    text = _call_groq(_groq_secondary, model, messages)
-                    used_model = f"secondary/{model}"
-                    success = True
-                    print(f"[GROQ-SECONDARY] Success: {model}")
-                    break
-                except Exception as e:
-                    print(f"[GROQ-SECONDARY] Failed {model}: {e}")
-
-        # ── 5. Fall back to DeepSeek ─────────────────────────────────────────
+        # ── 4. Fall back to DeepSeek ─────────────────────────────────────────
         if not success and DEEPSEEK_API_KEY:
             for model in DEEPSEEK_MODELS:
                 try:
@@ -339,7 +358,7 @@ async def run_chat(
                 except Exception as e:
                     print(f"[DEEPSEEK] Failed {model}: {e}")
 
-        # ── 6. Fall back to Zen AI ───────────────────────────────────────────
+        # ── 5. Fall back to Zen AI ───────────────────────────────────────────
         if not success and ZEN_API_KEY:
             for model in ZEN_MODELS:
                 try:

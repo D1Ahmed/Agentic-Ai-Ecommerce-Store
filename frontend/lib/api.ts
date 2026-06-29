@@ -187,11 +187,13 @@ export async function sendChatMessage(
   message: string,
   history: ChatHistoryMessage[] = [],
   userName?: string | null,
+  currentPath?: string | null
 ): Promise<ChatResponse> {
   const res = await api.post<ChatResponse>("/ai/chat", {
     user_message: message,
     history,
     user_name: userName || null,
+    current_path: currentPath || null,
   });
   return res.data;
 }

@@ -9,6 +9,8 @@ async def decrement_stock(
     items: List[OrderItem],
     user_id: Optional[int] = None,
     clear_cart: bool = True,
+    city: str = "",
+    province: str = ""
 ) -> None:
     """
     Validate stock, subtract ordered quantities, and optionally manage the cart.
@@ -57,6 +59,8 @@ async def decrement_stock(
                     "user_id": user_id,
                     "total": total_amount,
                     "status": "confirmed",
+                    "city": city,
+                    "province": province,
                     "items": {
                         "create": order_items_data
                     }

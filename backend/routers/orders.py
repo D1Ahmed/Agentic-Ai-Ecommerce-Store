@@ -21,7 +21,7 @@ async def place_order(
         raise HTTPException(status_code=400, detail="Cart is empty")
 
     try:
-        await decrement_stock(order.items, user_id=user.id, clear_cart=not partial)
+        await decrement_stock(order.items, user_id=user.id, clear_cart=not partial, city=order.city, province=order.province)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

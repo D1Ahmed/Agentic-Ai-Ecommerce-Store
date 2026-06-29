@@ -57,6 +57,8 @@ class OrderItem(BaseModel):
 class OrderRequest(BaseModel):
     """Request body for POST /orders/place-order."""
     items: List[OrderItem]
+    city: Optional[str] = ""
+    province: Optional[str] = ""
 
 
 # ── Chat ──────────────────────────────────────────────────────────────────────
@@ -72,6 +74,7 @@ class ChatRequest(BaseModel):
     user_message: str
     history: Optional[List[ChatMessage]] = []
     user_name: Optional[str] = None
+    current_path: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

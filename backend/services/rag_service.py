@@ -64,6 +64,13 @@ def semantic_ready() -> bool:
     return _index is not None
 
 
+def get_product_by_id(pid: int) -> Any | None:
+    for p in _products:
+        if p.id == pid:
+            return p
+    return None
+
+
 # ── Query intent parsing ──────────────────────────────────────────────────────
 
 def _parse_price(value: str, context: str) -> float:
@@ -86,25 +93,19 @@ def _parse_query_intent(query: str) -> dict:
         "browse_all": False,
     }
 
-    if any(w in q for w in ("women", "woman", "ladies", "female", "girls", "her")):
+    if re.search(r"\b(women|woman|ladies|female|girls|her)\b", q):
         intent["gender"] = "Women"
-    elif any(w in q for w in ("men", "man", "male", "guys", "boys", "him")):
+    elif re.search(r"\b(men|man|male|guys|boys|him)\b", q):
         intent["gender"] = "Men"
 
-    if "winter" in q:
+    if re.search(r"\b(winter)\b", q):
         intent["season"] = "Winter"
-    elif "summer" in q:
+    elif re.search(r"\b(summer)\b", q):
         intent["season"] = "Summer"
 
-    if any(w in q for w in ("shoe", "shoes", "sandal", "heel", "heels", "sneaker", "footwear")):
+    if re.search(r"\b(shoe|shoes|sandal|heel|heels|sneaker|footwear)\b", q):
         intent["sub_category"] = "Shoes"
-    elif any(
-        w in q
-        for w in (
-            "cloth", "clothes", "clothing", "shirt", "tee", "t-shirt",
-            "jacket", "pant", "pants", "short", "shorts", "dress", "outfit", "wear",
-        )
-    ):
+    elif re.search(r"\b(cloth|clothes|clothing|shirt|tee|t-shirt|jacket|pant|pants|short|shorts|dress|outfit|wear)\b", q):
         intent["sub_category"] = "Clothes"
 
     for pattern in (
@@ -124,7 +125,7 @@ def _parse_query_intent(query: str) -> dict:
             intent["min_price"] = _parse_price(match.group(1), match.group(0))
             break
 
-    if any(w in q for w in ("show", "find", "browse", "see", "list", "display", "all")):
+    if re.search(r"\b(show|find|browse|see|list|display|all)\b", q):
         intent["browse_all"] = True
 
     return intent

@@ -16,4 +16,5 @@ async def chat_with_clerk(request: ChatRequest):
         user_message=request.user_message,
         history=request.history or [],
         user_name=request.user_name,
+        current_path=request.current_path,
     )
