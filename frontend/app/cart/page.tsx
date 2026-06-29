@@ -494,7 +494,7 @@ export default function CartPage() {
           <div className="max-w-5xl mx-auto space-y-8">
             <div>
               <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
-                Billing Protocol
+                Checkout
               </h1>
               {checkoutItemIds !== null && (
                 <p className="text-sm text-blue-600 font-bold mt-1">
