@@ -505,7 +505,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (action === "PLACE_ORDER") {
-      executeOrder();
+      executeOrder("", "");
       return;
     }
 
