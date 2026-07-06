@@ -10,12 +10,7 @@ export default function SalePage() {
 
   const saleProducts = useMemo(() => {
     if (!products || products.length === 0) return [];
-    return products
-      .filter((p: any) => p.season === "Winter" || p.price > 5000)
-      .map((p: any) => ({
-        ...p,
-        displayDiscount: 20,
-      }));
+    return products.filter((p: any) => p.is_on_sale && p.sale_percentage > 0);
   }, [products]);
 
   if (!products || products.length === 0) {
@@ -65,10 +60,7 @@ export default function SalePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
           {saleProducts.map((product: any) => (
-            <div key={product.id} className="relative group">
-              <div className="absolute top-4 left-4 z-10 bg-red-600 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg">
-                <Percent size={10} /> {product.displayDiscount}% Off
-              </div>
+            <div key={product.id}>
               <ProductCard product={product} />
             </div>
           ))}
