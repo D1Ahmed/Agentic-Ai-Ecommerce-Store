@@ -66,3 +66,8 @@ EMBED_MODEL: str = "models/gemini-embedding-001"
 # ── Auth ──────────────────────────────────────────────────────────────────────
 AUTH_SECRET: str = os.getenv("AUTH_SECRET", "hdwear-dev-secret-change-in-production")
 SESSION_EXPIRE_DAYS: int = 30
+
+# ── Supabase Storage (for seller image uploads) ──────────────────────────────
+SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://zznakrbijfaxzfoatdzs.supabase.co")
+SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
+SUPABASE_BUCKET: str = "product-images"
