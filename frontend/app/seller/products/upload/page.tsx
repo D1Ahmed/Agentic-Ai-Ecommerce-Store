@@ -29,7 +29,7 @@ const SUB_CATEGORIES = {
   Sportswear: ["Activewear", "Gym Bags", "Sports Shoes", "Tracksuits"],
 };
 
-export default function ProductUploadPage() {
+function UploadContent() {
   const { isAuthenticated, isAuthLoading } = useStore();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -150,7 +150,6 @@ export default function ProductUploadPage() {
     if (!form.collection_id) return setError("Please select a collection");
     if (!form.category) return setError("Please select a category");
     if (!form.sub_category) return setError("Please select a sub-category");
-    // Description validation requirement removed based on prompt instructions to not be overly strict
 
     setSubmitting(true);
 
@@ -435,3 +434,15 @@ const Sparkles = ({ size, className }: any) => (
     <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
   </svg>
 );
+
+export default function ProductUploadPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-blue-600" />
+      </div>
+    }>
+      <UploadContent />
+    </React.Suspense>
+  );
+}
