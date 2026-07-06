@@ -49,7 +49,10 @@ async def decrement_stock(
                 new_stock = max(0, product.stock - item.quantity)
                 await db.product.update(
                     where={"id": item.id},
-                    data={"stock": new_stock},
+                    data={
+                        "stock": new_stock,
+                        "purchase_count": {"increment": item.quantity},
+                    },
                 )
 
     if user_id is not None:

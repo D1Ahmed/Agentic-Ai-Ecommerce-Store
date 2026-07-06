@@ -206,11 +206,26 @@ async def _build_inventory_text(query: str, current_path: str | None = None) -> 
     for p in products:
         desc = p.detailed_description if p.detailed_description else p.description
         short_desc = (desc[:180] + "...") if desc and len(desc) > 180 else (desc or "")
+        store_name = ""
+        if hasattr(p, "store") and p.store:
+            store_name = f" | Store: {p.store.name}"
+        sale_info = ""
+        if p.is_on_sale:
+            sale_info = f" | 🔥 ON SALE {p.sale_percentage}% OFF"
+        extra = ""
+        if p.material:
+            extra += f" | Material: {p.material}"
+        if p.style:
+            extra += f" | Style: {p.style}"
+        if p.occasion:
+            extra += f" | Occasion: {p.occasion}"
+        negotiable = "Negotiable" if p.is_negotiable else "Fixed Price"
         lines.append(
             f"ID:{p.id} | {p.name} | {p.category} | {p.sub_category} | "
             f"{p.gender} | {p.season} | {p.color} | "
-            f"Rs {p.price} (min Rs {p.min_price}) | "
-            f"Rating:{p.rating} | Stock:{p.stock} | img:{p.image_url}\n"
+            f"Rs {p.price} (min Rs {p.min_price}) [{negotiable}] | "
+            f"Rating:{p.rating} | Stock:{p.stock} | img:{p.image_url}"
+            f"{store_name}{sale_info}{extra}\n"
             f"  Desc: {short_desc}"
         )
     return "\n---\n".join(lines)
