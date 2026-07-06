@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Product {
-  id                   Int            @id @default(autoincrement())
+  id                   Int              @id @default(autoincrement())
   name                 String
   price                Float
   min_price            Float
@@ -20,26 +20,51 @@ model Product {
   gender               String?
   season               String?
   image_url            String?
-  stock                Int            @default(10)
-  rating               Float          @default(4.5)
-  reviews_count        Int            @default(12)
+  stock                Int              @default(10)
+  rating               Float            @default(0)
+  reviews_count        Int              @default(0)
+
+  // ── Seller / Store fields ──────────────────────────────────────────────────
+  store_id             Int?
+  collection_id        Int?
+  is_on_sale           Boolean          @default(false)
+  sale_percentage      Int              @default(0)
+  is_negotiable        Boolean          @default(true)
+  view_count           Int              @default(0)
+  purchase_count       Int              @default(0)
+  material             String?
+  style                String?
+  occasion             String?
+  size_options         String?          // JSON array string: ["S","M","L","XL"]
+  created_at           DateTime         @default(now())
+
+  // ── Relations ──────────────────────────────────────────────────────────────
+  store                Store?           @relation(fields: [store_id], references: [id], onDelete: SetNull)
+  collection           Collection?      @relation(fields: [collection_id], references: [id], onDelete: SetNull)
+  images               ProductImage[]
+  reviews              Review[]
+  questions            ProductQuestion[]
   cartItems            UserCartItem[]
   orderItems           OrderItem[]
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  email         String         @unique
+  id            Int              @id @default(autoincrement())
+  email         String           @unique
   password_hash String
   name          String
-  google_id     String?        @unique
+  google_id     String?          @unique
   address       String?
   phone_number  String?
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
+  role          String           @default("customer")
+  created_at    DateTime         @default(now())
+  updated_at    DateTime         @updatedAt
   sessions      Session[]
   cartItems     UserCartItem[]
   orders        Order[]
+  store         Store?
+  reviews       Review[]
+  questions     ProductQuestion[]
 }
 
 model Session {
@@ -85,4 +110,73 @@ model OrderItem {
   price      Float
   order      Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+}
+
+// ── Store / Seller System ────────────────────────────────────────────────────
+
+model Store {
+  id            Int            @id @default(autoincrement())
+  owner_id      Int            @unique
+  name          String
+  address       String
+  phone         String
+  description   String?
+  logo_url      String?
+  categories    String[]
+  is_active     Boolean        @default(true)
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  owner         User           @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+  collections   Collection[]
+  products      Product[]
+}
+
+model Collection {
+  id            Int            @id @default(autoincrement())
+  store_id      Int
+  name          String
+  description   String?
+  icon          String?        @default("folder")
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  store         Store          @relation(fields: [store_id], references: [id], onDelete: Cascade)
+  products      Product[]
+
+  @@unique([store_id, name])
+}
+
+model ProductImage {
+  id            Int            @id @default(autoincrement())
+  product_id    Int
+  image_url     String
+  is_primary    Boolean        @default(false)
+  sort_order    Int            @default(0)
+  created_at    DateTime       @default(now())
+  product       Product        @relation(fields: [product_id], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id            Int            @id @default(autoincrement())
+  product_id    Int
+  user_id       Int
+  rating        Int
+  title         String?
+  body          String
+  created_at    DateTime       @default(now())
+  product       Product        @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, user_id])
+}
+
+model ProductQuestion {
+  id            Int            @id @default(autoincrement())
+  product_id    Int
+  user_id       Int
+  question      String
+  answer        String?
+  answered_at   DateTime?
+  created_at    DateTime       @default(now())
+  product       Product        @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

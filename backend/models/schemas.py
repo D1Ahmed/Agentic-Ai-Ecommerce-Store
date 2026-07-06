@@ -21,6 +21,8 @@ class UserResponse(BaseModel):
     email: str
     address: Optional[str] = None
     phone_number: Optional[str] = None
+    role: str = "customer"
+    has_store: bool = False
 
 class GoogleLoginRequest(BaseModel):
     credential: str
@@ -82,3 +84,137 @@ class ChatResponse(BaseModel):
     text: str
     action: str
     debug_model: str
+
+
+# ── Store ─────────────────────────────────────────────────────────────────────
+
+class StoreRegisterRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    address: str = Field(min_length=5, max_length=300)
+    phone: str = Field(min_length=7, max_length=20)
+    categories: List[str] = Field(min_length=1)
+    description: Optional[str] = None
+
+
+class StoreUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    categories: Optional[List[str]] = None
+    description: Optional[str] = None
+
+
+class StoreResponse(BaseModel):
+    id: int
+    owner_id: int
+    name: str
+    address: str
+    phone: str
+    description: Optional[str] = None
+    logo_url: Optional[str] = None
+    categories: List[str] = []
+    is_active: bool = True
+
+
+# ── Collection ────────────────────────────────────────────────────────────────
+
+class CollectionCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    description: Optional[str] = None
+
+
+class CollectionResponse(BaseModel):
+    id: int
+    store_id: int
+    name: str
+    description: Optional[str] = None
+    icon: Optional[str] = "folder"
+    product_count: int = 0
+
+
+# ── Seller Product ────────────────────────────────────────────────────────────
+
+class SellerProductCreate(BaseModel):
+    """All the product metadata (images sent separately as multipart)."""
+    name: str = Field(min_length=2, max_length=200)
+    description: str = Field(min_length=20)
+    detailed_description: str = Field(min_length=50)
+    price: float = Field(gt=0)
+    min_price: float = Field(gt=0)
+    category: str
+    sub_category: str
+    color: str
+    gender: str               # "Men" | "Women" | "Unisex"
+    season: str               # "Summer" | "Winter" | "All Season"
+    collection_id: int
+    is_negotiable: bool = True
+    material: Optional[str] = None
+    style: Optional[str] = None
+    occasion: Optional[str] = None
+    size_options: Optional[str] = None   # JSON array as string
+    stock: int = Field(default=10, ge=0)
+
+
+class SellerProductUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    detailed_description: Optional[str] = None
+    price: Optional[float] = None
+    min_price: Optional[float] = None
+    category: Optional[str] = None
+    sub_category: Optional[str] = None
+    color: Optional[str] = None
+    gender: Optional[str] = None
+    season: Optional[str] = None
+    collection_id: Optional[int] = None
+    is_negotiable: Optional[bool] = None
+    material: Optional[str] = None
+    style: Optional[str] = None
+    occasion: Optional[str] = None
+    size_options: Optional[str] = None
+    stock: Optional[int] = None
+
+
+class ProductSaleToggle(BaseModel):
+    is_on_sale: bool
+    sale_percentage: int = Field(default=0, ge=0, le=90)
+
+
+# ── Reviews ───────────────────────────────────────────────────────────────────
+
+class ReviewCreate(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    title: Optional[str] = None
+    body: str = Field(min_length=5)
+
+
+class ReviewResponse(BaseModel):
+    id: int
+    product_id: int
+    user_id: int
+    user_name: str = ""
+    rating: int
+    title: Optional[str] = None
+    body: str
+    created_at: str
+
+
+# ── Product Q&A ───────────────────────────────────────────────────────────────
+
+class QuestionCreate(BaseModel):
+    question: str = Field(min_length=5)
+
+
+class AnswerRequest(BaseModel):
+    answer: str = Field(min_length=2)
+
+
+class QuestionResponse(BaseModel):
+    id: int
+    product_id: int
+    user_id: int
+    user_name: str = ""
+    question: str
+    answer: Optional[str] = None
+    answered_at: Optional[str] = None
+    created_at: str
