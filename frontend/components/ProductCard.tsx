@@ -40,11 +40,16 @@ export default function ProductCard({ product }: { product: any }) {
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />
-          <div className="absolute top-4 left-4 z-20">
-            <span className="bg-black/80 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-xl">
+          <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+            <span className="bg-black/80 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-xl w-fit">
               <Star size={10} fill="yellow" className="text-yellow-400" />{" "}
               {product.rating || "4.5"}
             </span>
+            {product.is_on_sale && product.sale_percentage > 0 && (
+              <span className="bg-red-600 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl w-fit">
+                {product.sale_percentage}% OFF
+              </span>
+            )}
           </div>
         </div>
 
@@ -53,9 +58,22 @@ export default function ProductCard({ product }: { product: any }) {
             <h3 className="font-black text-base uppercase tracking-tighter leading-snug group-hover:text-blue-600 transition-colors flex-1 min-w-0">
               {product.name}
             </h3>
-            <span className="font-bold text-blue-600 whitespace-nowrap flex-shrink-0 text-sm">
-              Rs {product.price.toLocaleString()}
-            </span>
+            <div className="flex flex-col items-end">
+              {product.is_on_sale && product.sale_percentage > 0 ? (
+                <>
+                  <span className="font-bold text-slate-400 line-through text-[10px]">
+                    Rs {product.price.toLocaleString()}
+                  </span>
+                  <span className="font-black text-red-600 whitespace-nowrap flex-shrink-0 text-sm italic">
+                    Rs {(product.price * (1 - product.sale_percentage / 100)).toLocaleString()}
+                  </span>
+                </>
+              ) : (
+                <span className="font-bold text-blue-600 whitespace-nowrap flex-shrink-0 text-sm">
+                  Rs {product.price.toLocaleString()}
+                </span>
+              )}
+            </div>
           </div>
           <p className="text-slate-500 text-xs line-clamp-1 mb-4 italic">
             {product.description}

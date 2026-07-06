@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
-import { ShoppingBag, Search, X, User, LogOut, LogIn, UserPlus, Menu } from "lucide-react";
+import { ShoppingBag, Search, X, User, LogOut, LogIn, UserPlus, Menu, Store } from "lucide-react";
 
 export default function Navbar({
   transparent = false,
@@ -204,6 +204,23 @@ export default function Navbar({
                     </p>
                     <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
                   </div>
+                  {user?.has_store ? (
+                    <Link
+                      href="/seller/dashboard"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors border-b border-slate-100"
+                    >
+                      <Store size={16} /> Seller Dashboard
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/seller/register"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors border-b border-slate-100"
+                    >
+                      <Store size={16} /> Become a Seller
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
