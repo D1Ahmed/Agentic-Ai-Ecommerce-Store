@@ -113,10 +113,17 @@ export default function NewArrivalsPage() {
               <Link href={`/collections/${product.id}`}>
                 <div className="relative aspect-[3/4] bg-slate-50 rounded-[2.5rem] overflow-hidden mb-6 shadow-sm group-hover:shadow-2xl transition-all duration-700 border border-slate-100">
                   <img
-                    src={product.image_url}
+                    src={product.image_url || "/placeholder.png"}
                     alt={product.name}
                     className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]"
                   />
+                  {product.is_on_sale && product.sale_percentage > 0 && (
+                    <div className="absolute top-4 left-4 z-20">
+                      <span className="bg-red-600 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl">
+                        {product.sale_percentage}% OFF
+                      </span>
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
                     <div className="opacity-0 group-hover:opacity-100 bg-white/20 backdrop-blur-md border border-white/30 text-white px-6 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.4em]">
                       Inspect Asset
@@ -125,12 +132,25 @@ export default function NewArrivalsPage() {
                 </div>
               </Link>
               <div className="flex justify-between items-end mb-1 px-2">
-                <h3 className="font-black text-slate-900 text-sm uppercase tracking-tighter">
+                <h3 className="font-black text-slate-900 text-sm uppercase tracking-tighter line-clamp-1 flex-1 pr-2">
                   {product.name}
                 </h3>
-                <span className="font-black text-slate-900 italic">
-                  Rs {product.price.toLocaleString()}
-                </span>
+                <div className="text-right shrink-0">
+                  {product.is_on_sale && product.sale_percentage > 0 ? (
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-slate-400 line-through font-bold">
+                        Rs {product.price.toLocaleString()}
+                      </span>
+                      <span className="font-black text-red-600 italic">
+                        Rs {(product.price * (1 - product.sale_percentage / 100)).toLocaleString()}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-black text-slate-900 italic">
+                      Rs {product.price.toLocaleString()}
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => addToCart(product)}
