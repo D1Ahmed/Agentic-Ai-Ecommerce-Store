@@ -274,6 +274,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     return res.user;
   };
 
+
+
   const updateProfile = async (address?: string, phone_number?: string) => {
     const updatedUser = await updateUserProfile({ address, phone_number });
     setUser(updatedUser);

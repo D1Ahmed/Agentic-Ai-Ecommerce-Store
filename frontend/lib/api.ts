@@ -6,6 +6,12 @@ import type {
   User,
   AuthResponse,
   CartItem,
+  Store,
+  Collection,
+  Review,
+  ProductQuestion,
+  SellerProduct,
+  SellerNotification,
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -196,4 +202,158 @@ export async function sendChatMessage(
     current_path: currentPath || null,
   });
   return res.data;
+}
+
+// ── Store ─────────────────────────────────────────────────────────────────────
+
+export async function registerStore(data: {
+  name: string;
+  address: string;
+  phone: string;
+  categories: string[];
+  description?: string;
+}): Promise<Store> {
+  const res = await api.post<Store>("/store/register", data);
+  return res.data;
+}
+
+export async function fetchMyStore(): Promise<Store> {
+  const res = await api.get<Store>("/store/me");
+  return res.data;
+}
+
+export async function fetchPublicStore(storeId: number): Promise<Store> {
+  const res = await api.get<Store>(`/store/${storeId}`);
+  return res.data;
+}
+
+export async function updateMyStore(data: {
+  name?: string;
+  address?: string;
+  phone?: string;
+  categories?: string[];
+  description?: string;
+}): Promise<Store> {
+  const res = await api.put<Store>("/store/me", data);
+  return res.data;
+}
+
+// ── Seller Collections ───────────────────────────────────────────────────────
+
+export async function createCollection(data: {
+  name: string;
+  description?: string;
+}): Promise<Collection> {
+  const res = await api.post<Collection>("/seller/collections", data);
+  return res.data;
+}
+
+export async function fetchMyCollections(): Promise<Collection[]> {
+  const res = await api.get<Collection[]>("/seller/collections");
+  return res.data;
+}
+
+export async function deleteCollection(id: number): Promise<void> {
+  await api.delete(`/seller/collections/${id}`);
+}
+
+// ── Seller Products ──────────────────────────────────────────────────────────
+
+export async function uploadProduct(formData: FormData): Promise<any> {
+  const res = await api.post("/seller/products", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+}
+
+export async function updateProduct(id: number, data: Record<string, any>): Promise<any> {
+  const res = await api.put(`/seller/products/${id}`, data);
+  return res.data;
+}
+
+export async function deleteProduct(id: number): Promise<void> {
+  await api.delete(`/seller/products/${id}`);
+}
+
+export async function deleteProductImage(productId: number, imageId: number): Promise<void> {
+  await api.delete(`/seller/products/${productId}/images/${imageId}`);
+}
+
+export async function addProductImages(productId: number, formData: FormData): Promise<any> {
+  const res = await api.post(`/seller/products/${productId}/images`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+}
+
+export async function toggleProductSale(
+  id: number,
+  is_on_sale: boolean,
+  sale_percentage: number
+): Promise<any> {
+  const res = await api.put(`/seller/products/${id}/sale`, { is_on_sale, sale_percentage });
+  return res.data;
+}
+
+export async function fetchMyProducts(collectionId?: number): Promise<SellerProduct[]> {
+  const params = collectionId ? { collection_id: collectionId } : {};
+  const res = await api.get<SellerProduct[]>("/seller/products", { params });
+  return res.data;
+}
+
+// ── Reviews & Q&A ────────────────────────────────────────────────────────────
+
+export async function fetchProductReviews(productId: number): Promise<Review[]> {
+  const res = await api.get<Review[]>(`/products/${productId}/reviews`);
+  return res.data;
+}
+
+export async function postReview(
+  productId: number,
+  data: { rating: number; title?: string; body: string }
+): Promise<Review> {
+  const res = await api.post<Review>(`/products/${productId}/reviews`, data);
+  return res.data;
+}
+
+export async function checkCanReview(productId: number): Promise<boolean> {
+  try {
+    const res = await api.get<{ can_review: boolean }>(`/products/${productId}/can-review`);
+    return res.data.can_review;
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchProductQuestions(productId: number): Promise<ProductQuestion[]> {
+  const res = await api.get<ProductQuestion[]>(`/products/${productId}/questions`);
+  return res.data;
+}
+
+export async function postQuestion(productId: number, question: string): Promise<ProductQuestion> {
+  const res = await api.post<ProductQuestion>(`/products/${productId}/questions`, { question });
+  return res.data;
+}
+
+export async function answerQuestion(questionId: number, answer: string): Promise<any> {
+  const res = await api.put(`/seller/questions/${questionId}/answer`, { answer });
+  return res.data;
+}
+
+export async function fetchSellerNotifications(): Promise<{
+  count: number;
+  questions: SellerNotification[];
+}> {
+  const res = await api.get("/seller/notifications");
+  return res.data;
+}
+
+// ── View Tracking ────────────────────────────────────────────────────────────
+
+export async function trackProductView(productId: number): Promise<void> {
+  try {
+    await api.post(`/products/${productId}/view`);
+  } catch {
+    // Non-critical
+  }
 }
