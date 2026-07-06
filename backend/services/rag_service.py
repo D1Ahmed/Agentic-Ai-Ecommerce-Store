@@ -91,22 +91,70 @@ def _parse_query_intent(query: str) -> dict:
         "max_price": None,
         "min_price": None,
         "browse_all": False,
+        "on_sale": False,
+        "material": None,
+        "style": None,
+        "occasion": None,
     }
 
     if re.search(r"\b(women|woman|ladies|female|girls|her)\b", q):
         intent["gender"] = "Women"
     elif re.search(r"\b(men|man|male|guys|boys|him)\b", q):
         intent["gender"] = "Men"
+    elif re.search(r"\b(unisex|everyone|all genders)\b", q):
+        intent["gender"] = "Unisex"
 
     if re.search(r"\b(winter)\b", q):
         intent["season"] = "Winter"
     elif re.search(r"\b(summer)\b", q):
         intent["season"] = "Summer"
 
-    if re.search(r"\b(shoe|shoes|sandal|heel|heels|sneaker|footwear)\b", q):
+    if re.search(r"\b(shoe|shoes|sandal|heel|heels|sneaker|footwear|boot|boots|loafer|chappal|slipper)\b", q):
         intent["sub_category"] = "Shoes"
-    elif re.search(r"\b(cloth|clothes|clothing|shirt|tee|t-shirt|jacket|pant|pants|short|shorts|dress|outfit|wear)\b", q):
+    elif re.search(r"\b(cloth|clothes|clothing|shirt|tee|t-shirt|jacket|pant|pants|short|shorts|dress|outfit|wear|coat|sweater|hoodie|blouse|skirt|trench)\b", q):
         intent["sub_category"] = "Clothes"
+    elif re.search(r"\b(perfume|fragrance|cologne|scent|spray)\b", q):
+        intent["sub_category"] = "Perfumes"
+    elif re.search(r"\b(watch|watches|timepiece)\b", q):
+        intent["sub_category"] = "Watches"
+    elif re.search(r"\b(bag|bags|handbag|backpack|tote|purse)\b", q):
+        intent["sub_category"] = "Bags"
+
+    # Sale / discount intent
+    if re.search(r"\b(sale|discount|discounted|deal|deals|offer|offers|clearance|cheap|cheapest|bargain)\b", q):
+        intent["on_sale"] = True
+
+    # Material
+    if re.search(r"\b(leather)\b", q):
+        intent["material"] = "leather"
+    elif re.search(r"\b(cotton)\b", q):
+        intent["material"] = "cotton"
+    elif re.search(r"\b(denim)\b", q):
+        intent["material"] = "denim"
+    elif re.search(r"\b(silk)\b", q):
+        intent["material"] = "silk"
+    elif re.search(r"\b(wool)\b", q):
+        intent["material"] = "wool"
+    elif re.search(r"\b(linen)\b", q):
+        intent["material"] = "linen"
+
+    # Style
+    if re.search(r"\b(casual)\b", q):
+        intent["style"] = "casual"
+    elif re.search(r"\b(formal|office|business)\b", q):
+        intent["style"] = "formal"
+    elif re.search(r"\b(sporty|athletic|sport|gym)\b", q):
+        intent["style"] = "sporty"
+    elif re.search(r"\b(streetwear|street|urban)\b", q):
+        intent["style"] = "streetwear"
+
+    # Occasion
+    if re.search(r"\b(party|parties|night out|club)\b", q):
+        intent["occasion"] = "party"
+    elif re.search(r"\b(wedding|shaadi|bridal)\b", q):
+        intent["occasion"] = "wedding"
+    elif re.search(r"\b(daily|everyday|routine)\b", q):
+        intent["occasion"] = "daily"
 
     for pattern in (
         r"(?:under|below|less than|<|max|upto|up to)\s*(?:rs\.?\s*)?(\d+(?:\.\d+)?)\s*k?\b",
@@ -142,20 +190,40 @@ def _product_to_document(p: Any) -> str:
         f"Rs {p.price}",
         p.description or "",
         p.detailed_description or "",
+        p.material or "",
+        p.style or "",
+        p.occasion or "",
     ]
+    # Include store name if available
+    if hasattr(p, "store") and p.store:
+        parts.append(f"Store: {p.store.name}")
+    # Include sale info
+    if p.is_on_sale:
+        parts.append(f"ON SALE {p.sale_percentage}% OFF")
     return " | ".join(part for part in parts if part)
 
 
 def _matches_filters(p: Any, intent: dict) -> bool:
     if intent["gender"] and (p.gender or "").lower() != intent["gender"].lower():
-        return False
+        # Allow Unisex to match any gender query
+        if (p.gender or "").lower() != "unisex":
+            return False
     if intent["season"] and (p.season or "").lower() != intent["season"].lower():
-        return False
+        if (p.season or "").lower() != "all season":
+            return False
     if intent["sub_category"] and (p.sub_category or "").lower() != intent["sub_category"].lower():
         return False
     if intent["max_price"] is not None and p.price > intent["max_price"]:
         return False
     if intent["min_price"] is not None and p.price < intent["min_price"]:
+        return False
+    if intent["on_sale"] and not p.is_on_sale:
+        return False
+    if intent["material"] and intent["material"] not in (p.material or "").lower():
+        return False
+    if intent["style"] and intent["style"] not in (p.style or "").lower():
+        return False
+    if intent["occasion"] and intent["occasion"] not in (p.occasion or "").lower():
         return False
     return True
 
@@ -179,8 +247,8 @@ def _keyword_retrieve(query: str, top_k: int) -> List[Any]:
 
     intent = _parse_query_intent(query)
     has_filters = any(
-        intent[k] is not None
-        for k in ("gender", "season", "sub_category", "max_price", "min_price")
+        intent[k] is not None and intent[k] is not False
+        for k in ("gender", "season", "sub_category", "max_price", "min_price", "on_sale", "material", "style", "occasion")
     )
 
     scored: List[tuple[float, Any]] = []
