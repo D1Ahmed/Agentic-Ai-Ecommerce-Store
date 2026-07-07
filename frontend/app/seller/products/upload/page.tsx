@@ -127,9 +127,8 @@ function UploadContent() {
     setPreviewUrls(newPreviews);
   };
 
-  const handleAddSize = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && sizeInput.trim()) {
-      e.preventDefault();
+  const addSize = () => {
+    if (sizeInput.trim()) {
       if (!form.size_options.includes(sizeInput.trim().toUpperCase())) {
         setForm(prev => ({ ...prev, size_options: [...prev.size_options, sizeInput.trim().toUpperCase()] }));
       }
@@ -137,19 +136,31 @@ function UploadContent() {
     }
   };
 
+  const handleAddSize = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addSize();
+    }
+  };
+
   const removeSize = (size: string) => {
     setForm(prev => ({ ...prev, size_options: prev.size_options.filter(s => s !== size) }));
   };
 
-  const handleAddColor = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && colorInput.trim()) {
-      e.preventDefault();
-      // capitalize first letter of each word for colors usually
+  const addColor = () => {
+    if (colorInput.trim()) {
       const newColor = colorInput.trim().replace(/\b\w/g, l => l.toUpperCase());
       if (!form.color_options.includes(newColor)) {
         setForm(prev => ({ ...prev, color_options: [...prev.color_options, newColor] }));
       }
       setColorInput("");
+    }
+  };
+
+  const handleAddColor = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addColor();
     }
   };
 
@@ -423,14 +434,23 @@ function UploadContent() {
                       </span>
                     ))}
                   </div>
-                  <input 
-                    type="text" 
-                    value={sizeInput} 
-                    onChange={e => setSizeInput(e.target.value)} 
-                    onKeyDown={handleAddSize}
-                    placeholder="Type size (e.g. XL, 42) and press Enter" 
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 transition-all" 
-                  />
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      value={sizeInput} 
+                      onChange={e => setSizeInput(e.target.value)} 
+                      onKeyDown={handleAddSize}
+                      placeholder="Type size (e.g. XL, 42)" 
+                      className="w-full pl-5 pr-14 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 transition-all" 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={addSize}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-2 rounded-lg hover:bg-slate-900 transition-colors"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block">Available Colors</label>
@@ -442,14 +462,23 @@ function UploadContent() {
                       </span>
                     ))}
                   </div>
-                  <input 
-                    type="text" 
-                    value={colorInput} 
-                    onChange={e => setColorInput(e.target.value)} 
-                    onKeyDown={handleAddColor}
-                    placeholder="Type color (e.g. Red) and press Enter" 
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 transition-all" 
-                  />
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      value={colorInput} 
+                      onChange={e => setColorInput(e.target.value)} 
+                      onKeyDown={handleAddColor}
+                      placeholder="Type color (e.g. Red)" 
+                      className="w-full pl-5 pr-14 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 transition-all" 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={addColor}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-2 rounded-lg hover:bg-slate-900 transition-colors"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
