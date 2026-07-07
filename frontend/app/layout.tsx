@@ -2,6 +2,15 @@ import "./globals.css";
 import { StoreProvider } from "@/context/StoreContext";
 import ChatWindow from "@/components/ChatWindow";
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import type { Viewport } from 'next';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  interactiveWidget: 'resizes-content'
+};
 
 export default function RootLayout({
   children,
