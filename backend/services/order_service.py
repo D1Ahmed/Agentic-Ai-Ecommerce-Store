@@ -40,7 +40,9 @@ async def decrement_stock(
             order_items_data.append({
                 "product_id": item.id,
                 "quantity": item.quantity,
-                "price": product.price
+                "price": product.price,
+                "selected_size": getattr(item, "selected_size", None),
+                "selected_color": getattr(item, "selected_color", None)
             })
 
         for item in items:
@@ -74,15 +76,19 @@ async def decrement_stock(
             # Full checkout — wipe entire cart
             await clear_user_cart(user_id)
         else:
-            # Individual/partial purchase — remove only the bought items
-            purchased_ids = {item.id for item in items}
+            # Individual/partial purchase — remove only the bought exact items
             async with get_db() as db:
-                await db.usercartitem.delete_many(
-                    where={
+                for item in items:
+                    where_clause = {
                         "user_id": user_id,
-                        "product_id": {"in": list(purchased_ids)},
+                        "product_id": item.id,
                     }
-                )
+                    if getattr(item, "selected_size", None):
+                        where_clause["selected_size"] = item.selected_size
+                    if getattr(item, "selected_color", None):
+                        where_clause["selected_color"] = item.selected_color
+                        
+                    await db.usercartitem.delete_many(where=where_clause)
 
     try:
         from services.rag_service import refresh_index

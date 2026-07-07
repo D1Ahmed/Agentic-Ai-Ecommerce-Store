@@ -199,18 +199,21 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [isAuthenticated]);
 
+  const getItemKey = (item: CartItem) => `${item.id}-${item.selected_size || ''}-${item.selected_color || ''}`;
+
   const mergeCarts = (local: CartItem[], server: CartItem[]): CartItem[] => {
-    const merged = new Map<number, CartItem>();
-    for (const item of server) merged.set(item.id, { ...item });
+    const merged = new Map<string, CartItem>();
+    for (const item of server) merged.set(getItemKey(item), { ...item });
     for (const item of local) {
-      const existing = merged.get(item.id);
+      const key = getItemKey(item);
+      const existing = merged.get(key);
       if (existing) {
-        merged.set(item.id, {
+        merged.set(key, {
           ...existing,
           quantity: existing.quantity + item.quantity,
         });
       } else {
-        merged.set(item.id, { ...item });
+        merged.set(key, { ...item });
       }
     }
     return Array.from(merged.values());
@@ -501,17 +504,26 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           : 1;
 
       const productToAdd = products.find((p) => p.id === productId);
+      
+      let selectedSize = undefined;
+      let selectedColor = undefined;
+      const sizeIndex = parts.indexOf("SIZE");
+      if (sizeIndex !== -1 && sizeIndex + 1 < parts.length) selectedSize = parts[sizeIndex + 1];
+      const colorIndex = parts.indexOf("COLOR");
+      if (colorIndex !== -1 && colorIndex + 1 < parts.length) selectedColor = parts[colorIndex + 1];
+
       if (productToAdd) {
         setCart((prev) => {
-          const existing = prev.find((item) => item.id === productId);
+          const itemKey = `${productId}-${selectedSize || ''}-${selectedColor || ''}`;
+          const existing = prev.find((item) => `${item.id}-${item.selected_size || ''}-${item.selected_color || ''}` === itemKey);
           if (existing) {
             return prev.map((item) =>
-              item.id === productId
+              `${item.id}-${item.selected_size || ''}-${item.selected_color || ''}` === itemKey
                 ? { ...item, quantity: item.quantity + qtyToAdd }
                 : item,
             );
           }
-          return [...prev, { ...productToAdd, quantity: qtyToAdd }];
+          return [...prev, { ...productToAdd, quantity: qtyToAdd, selected_size: selectedSize, selected_color: selectedColor }];
         });
         setForceBillingItemId(productId);
         router.push("/cart");
@@ -533,17 +545,26 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           : 1;
 
       const productToAdd = products.find((p) => p.id === productId);
+      
+      let selectedSize = undefined;
+      let selectedColor = undefined;
+      const sizeIndex = parts.indexOf("SIZE");
+      if (sizeIndex !== -1 && sizeIndex + 1 < parts.length) selectedSize = parts[sizeIndex + 1];
+      const colorIndex = parts.indexOf("COLOR");
+      if (colorIndex !== -1 && colorIndex + 1 < parts.length) selectedColor = parts[colorIndex + 1];
+
       if (productToAdd) {
         setCart((prev) => {
-          const existing = prev.find((item) => item.id === productId);
+          const itemKey = `${productId}-${selectedSize || ''}-${selectedColor || ''}`;
+          const existing = prev.find((item) => `${item.id}-${item.selected_size || ''}-${item.selected_color || ''}` === itemKey);
           if (existing) {
             return prev.map((item) =>
-              item.id === productId
+              `${item.id}-${item.selected_size || ''}-${item.selected_color || ''}` === itemKey
                 ? { ...item, quantity: item.quantity + qtyToAdd }
                 : item,
             );
           }
-          return [...prev, { ...productToAdd, quantity: qtyToAdd }];
+          return [...prev, { ...productToAdd, quantity: qtyToAdd, selected_size: selectedSize, selected_color: selectedColor }];
         });
       }
       return;

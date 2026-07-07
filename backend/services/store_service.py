@@ -213,6 +213,7 @@ async def create_seller_product(store_id: int, data: Dict[str, Any]) -> Any:
                 "style": data.get("style"),
                 "occasion": data.get("occasion"),
                 "size_options": data.get("size_options"),
+                "color_options": data.get("color_options"),
                 "stock": data.get("stock", 10),
             }
         )

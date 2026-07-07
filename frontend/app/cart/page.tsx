@@ -328,8 +328,10 @@ export default function CartPage() {
                               <h3 className="font-bold text-base text-slate-900 leading-snug truncate">
                                 {item.name}
                               </h3>
-                              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5">
-                                {item.category}
+                              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5 flex gap-2">
+                                <span>{item.category}</span>
+                                {item.selected_size && <span>| Size: {item.selected_size}</span>}
+                                {item.selected_color && <span>| Color: {item.selected_color}</span>}
                               </p>
 
                               {/* Stock badge */}
@@ -528,8 +530,10 @@ export default function CartPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-sm text-slate-900 truncate">{item.name}</h4>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-0.5">
-                        {item.category}
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-0.5 flex gap-2">
+                        <span>{item.category}</span>
+                        {item.selected_size && <span>| Size: {item.selected_size}</span>}
+                        {item.selected_color && <span>| Color: {item.selected_color}</span>}
                       </p>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
                         <div className="flex items-center gap-1 bg-white rounded border border-slate-200 overflow-hidden">

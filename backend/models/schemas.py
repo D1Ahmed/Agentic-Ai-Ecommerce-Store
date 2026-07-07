@@ -42,6 +42,8 @@ class AuthResponse(BaseModel):
 class CartSyncItem(BaseModel):
     product_id: int
     quantity: int = Field(ge=1)
+    selected_size: Optional[str] = None
+    selected_color: Optional[str] = None
 
 
 class CartSyncRequest(BaseModel):
@@ -54,6 +56,8 @@ class OrderItem(BaseModel):
     """A single line item in an order."""
     id: int
     quantity: int
+    selected_size: Optional[str] = None
+    selected_color: Optional[str] = None
 
 
 class OrderRequest(BaseModel):
@@ -152,6 +156,7 @@ class SellerProductCreate(BaseModel):
     style: Optional[str] = None
     occasion: Optional[str] = None
     size_options: Optional[str] = None   # JSON array as string
+    color_options: Optional[str] = None  # JSON array as string
     stock: int = Field(default=10, ge=0)
 
 
@@ -172,6 +177,7 @@ class SellerProductUpdate(BaseModel):
     style: Optional[str] = None
     occasion: Optional[str] = None
     size_options: Optional[str] = None
+    color_options: Optional[str] = None
     stock: Optional[int] = None
 
 

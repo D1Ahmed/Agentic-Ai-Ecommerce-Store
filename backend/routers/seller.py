@@ -115,6 +115,7 @@ async def upload_product(
     style: Optional[str] = Form(None),
     occasion: Optional[str] = Form(None),
     size_options: Optional[str] = Form(None),
+    color_options: Optional[str] = Form(None),
     stock: int = Form(10),
 ):
     """Upload a new product with 1-5 images."""
@@ -150,6 +151,7 @@ async def upload_product(
         "style": style,
         "occasion": occasion,
         "size_options": size_options,
+        "color_options": color_options,
         "stock": stock,
     }
 

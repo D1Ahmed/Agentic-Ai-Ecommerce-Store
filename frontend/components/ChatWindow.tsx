@@ -151,7 +151,7 @@ export default function ChatWindow() {
           dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
           dragElastic={0.6}
           onDragEnd={handleDragEnd}
-          className={`fixed w-full h-[100dvh] md:w-[440px] md:h-[640px] bg-white md:rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] border border-slate-100 flex flex-col z-[9999] overflow-hidden ${
+          className={`fixed inset-0 md:inset-auto w-full h-[100dvh] md:w-[440px] md:h-[640px] bg-white md:rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] border border-slate-100 flex flex-col z-[9999] overflow-hidden ${
             side === "right" ? "md:bottom-8 md:right-8" : "md:bottom-8 md:left-8"
           }`}
         >

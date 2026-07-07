@@ -32,6 +32,7 @@ export default function InspectionWindow() {
   const router = useRouter();
   const { products, cart, setCart, isAuthenticated, user } = useStore();
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
 
   // Reviews & QA State
@@ -77,8 +78,19 @@ export default function InspectionWindow() {
         return [];
       }
     }
-    if (product.sub_category === "Clothes") return ["S", "M", "L", "XL"];
-    if (product.sub_category === "Shoes") return ["38", "39", "40", "41", "42", "43", "44"];
+    return [];
+  }, [product]);
+
+  // Dynamic Colors logic
+  const availableColors = useMemo(() => {
+    if (!product) return [];
+    if (product.color_options) {
+      try {
+        return typeof product.color_options === "string" ? JSON.parse(product.color_options) : product.color_options;
+      } catch (e) {
+        return [];
+      }
+    }
     return [];
   }, [product]);
 
@@ -86,7 +98,10 @@ export default function InspectionWindow() {
     if (availableSizes.length > 0 && !selectedSize) {
       setSelectedSize(availableSizes[0]);
     }
-  }, [availableSizes]);
+    if (availableColors.length > 0 && !selectedColor) {
+      setSelectedColor(availableColors[0]);
+    }
+  }, [availableSizes, availableColors]);
 
   useEffect(() => {
     if (product) {
@@ -299,7 +314,7 @@ export default function InspectionWindow() {
 
                 {/* Size Selector */}
                 {availableSizes.length > 0 && (
-                  <div className="mb-10">
+                  <div className="mb-6">
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4 flex justify-between">
                       <span>Select Size</span>
                     </h3>
@@ -321,25 +336,54 @@ export default function InspectionWindow() {
                   </div>
                 )}
 
+                {/* Color Selector */}
+                {availableColors.length > 0 && (
+                  <div className="mb-10">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4 flex justify-between">
+                      <span>Select Color</span>
+                    </h3>
+                    <div className="flex flex-wrap gap-3">
+                      {availableColors.map((c: string) => (
+                        <button
+                          key={c}
+                          onClick={() => setSelectedColor(c)}
+                          className={`min-w-[3.5rem] px-4 py-3 rounded-xl font-black text-xs border transition-all ${
+                            selectedColor === c
+                              ? "bg-black text-white shadow-xl scale-105 border-black"
+                              : "border-slate-200 text-slate-500 hover:border-slate-900 hover:text-slate-900 bg-slate-50"
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="space-y-4 mb-10">
                   <button
-                    disabled={product.stock <= 0}
+                    disabled={
+                      product.stock <= 0 || 
+                      (availableSizes.length > 0 && !selectedSize) || 
+                      (availableColors.length > 0 && !selectedColor)
+                    }
                     onClick={() =>
                       setCart((prev: any) => {
-                        const existingItem = prev.find((item: any) => item.id === product.id && item.size === selectedSize);
+                        const itemKey = `${product.id}-${selectedSize || ''}-${selectedColor || ''}`;
+                        const existingItem = prev.find((item: any) => `${item.id}-${item.selected_size || ''}-${item.selected_color || ''}` === itemKey);
                         if (existingItem) {
                           return prev.map((item: any) =>
-                            item.id === product.id && item.size === selectedSize
+                            `${item.id}-${item.selected_size || ''}-${item.selected_color || ''}` === itemKey
                               ? { ...item, quantity: (item.quantity || 1) + 1 }
                               : item,
                           );
                         }
-                        return [...prev, { ...product, size: selectedSize, quantity: 1 }];
+                        return [...prev, { ...product, selected_size: selectedSize || undefined, selected_color: selectedColor || undefined, quantity: 1 }];
                       })
                     }
                     className={`w-full py-6 rounded-2xl font-black uppercase text-[11px] tracking-[0.4em] transition-all shadow-xl flex items-center justify-center gap-3 ${
-                      product.stock > 0 
+                      product.stock > 0 && (!availableSizes.length || selectedSize) && (!availableColors.length || selectedColor)
                       ? "bg-blue-600 text-white hover:bg-black active:scale-[0.98]" 
                       : "bg-slate-100 text-slate-400 cursor-not-allowed"
                     }`}

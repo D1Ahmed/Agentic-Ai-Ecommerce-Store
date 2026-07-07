@@ -194,6 +194,11 @@ def _product_to_document(p: Any) -> str:
         p.style or "",
         p.occasion or "",
     ]
+    if getattr(p, "size_options", None):
+        parts.append(f"Sizes: {p.size_options}")
+    if getattr(p, "color_options", None):
+        parts.append(f"Colors: {p.color_options}")
+        
     # Include store name if available
     if hasattr(p, "store") and p.store:
         parts.append(f"Store: {p.store.name}")

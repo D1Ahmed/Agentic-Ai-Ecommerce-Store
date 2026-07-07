@@ -63,9 +63,11 @@ function UploadContent() {
     occasion: "",
     stock: "10",
     size_options: [] as string[],
+    color_options: [] as string[],
   });
 
   const [sizeInput, setSizeInput] = useState("");
+  const [colorInput, setColorInput] = useState("");
 
   useEffect(() => {
     if (isAuthLoading) return;
@@ -139,6 +141,22 @@ function UploadContent() {
     setForm(prev => ({ ...prev, size_options: prev.size_options.filter(s => s !== size) }));
   };
 
+  const handleAddColor = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && colorInput.trim()) {
+      e.preventDefault();
+      // capitalize first letter of each word for colors usually
+      const newColor = colorInput.trim().replace(/\b\w/g, l => l.toUpperCase());
+      if (!form.color_options.includes(newColor)) {
+        setForm(prev => ({ ...prev, color_options: [...prev.color_options, newColor] }));
+      }
+      setColorInput("");
+    }
+  };
+
+  const removeColor = (color: string) => {
+    setForm(prev => ({ ...prev, color_options: prev.color_options.filter(c => c !== color) }));
+  };
+
   const wordCount = form.detailed_description.trim().split(/\s+/).filter(w => w.length > 0).length;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,8 +192,13 @@ function UploadContent() {
       if (form.material) formData.append("material", form.material);
       if (form.style) formData.append("style", form.style);
       if (form.occasion) formData.append("occasion", form.occasion);
-      if (form.size_options.length > 0) {
+      
+      const isClothingOrShoes = ["Clothing", "Shoes", "Sportswear"].includes(form.category);
+      if (isClothingOrShoes && form.size_options.length > 0) {
         formData.append("size_options", JSON.stringify(form.size_options));
+      }
+      if (isClothingOrShoes && form.color_options.length > 0) {
+        formData.append("color_options", JSON.stringify(form.color_options));
       }
 
       await uploadProduct(formData);
@@ -388,25 +411,48 @@ function UploadContent() {
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block">Available Sizes</label>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {form.size_options.map(size => (
-                  <span key={size} className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2">
-                    {size}
-                    <button type="button" onClick={() => removeSize(size)} className="hover:text-red-400"><X size={12} /></button>
-                  </span>
-                ))}
+            {["Clothing", "Shoes", "Sportswear"].includes(form.category) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-100 pt-6 mt-6">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block">Available Sizes</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {form.size_options.map(size => (
+                      <span key={size} className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2">
+                        {size}
+                        <button type="button" onClick={() => removeSize(size)} className="hover:text-red-400"><X size={12} /></button>
+                      </span>
+                    ))}
+                  </div>
+                  <input 
+                    type="text" 
+                    value={sizeInput} 
+                    onChange={e => setSizeInput(e.target.value)} 
+                    onKeyDown={handleAddSize}
+                    placeholder="Type size (e.g. XL, 42) and press Enter" 
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block">Available Colors</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {form.color_options.map(color => (
+                      <span key={color} className="bg-blue-100 text-blue-900 border border-blue-200 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2">
+                        {color}
+                        <button type="button" onClick={() => removeColor(color)} className="hover:text-red-400"><X size={12} /></button>
+                      </span>
+                    ))}
+                  </div>
+                  <input 
+                    type="text" 
+                    value={colorInput} 
+                    onChange={e => setColorInput(e.target.value)} 
+                    onKeyDown={handleAddColor}
+                    placeholder="Type color (e.g. Red) and press Enter" 
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 transition-all" 
+                  />
+                </div>
               </div>
-              <input 
-                type="text" 
-                value={sizeInput} 
-                onChange={e => setSizeInput(e.target.value)} 
-                onKeyDown={handleAddSize}
-                placeholder="Type size (e.g. XL, 42) and press Enter" 
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 transition-all" 
-              />
-            </div>
+            )}
           </div>
 
           <div className="pt-4 pb-12">

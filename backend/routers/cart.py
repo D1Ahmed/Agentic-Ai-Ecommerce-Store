@@ -14,7 +14,12 @@ async def get_cart(user=Depends(get_current_user)):
 
 @router.put("/sync")
 async def sync_cart(body: CartSyncRequest, user=Depends(get_current_user)):
-    items = [{"product_id": i.product_id, "quantity": i.quantity} for i in body.items]
+    items = [{
+        "product_id": i.product_id, 
+        "quantity": i.quantity,
+        "selected_size": i.selected_size,
+        "selected_color": i.selected_color
+    } for i in body.items]
     return await sync_user_cart(user.id, items)
 
 

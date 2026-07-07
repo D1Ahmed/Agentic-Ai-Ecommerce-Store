@@ -36,6 +36,7 @@ model Product {
   style                String?
   occasion             String?
   size_options         String?          // JSON array string: ["S","M","L","XL"]
+  color_options        String?          // JSON array string: ["Red", "Blue"]
   created_at           DateTime         @default(now())
 
   // ── Relations ──────────────────────────────────────────────────────────────
@@ -79,16 +80,16 @@ model Session {
 }
 
 model UserCartItem {
-  id         Int      @id @default(autoincrement())
-  user_id    Int
-  product_id Int
-  quantity   Int      @default(1)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
-
-  @@unique([user_id, product_id])
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  product_id     Int
+  quantity       Int      @default(1)
+  selected_size  String?
+  selected_color String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  user           User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product        Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 }
 
 model Order {
@@ -105,13 +106,15 @@ model Order {
 }
 
 model OrderItem {
-  id         Int      @id @default(autoincrement())
-  order_id   Int
-  product_id Int
-  quantity   Int
-  price      Float
-  order      Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  id             Int      @id @default(autoincrement())
+  order_id       Int
+  product_id     Int
+  quantity       Int
+  price          Float
+  selected_size  String?
+  selected_color String?
+  order          Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product        Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 }
 
 // ── Store / Seller System ────────────────────────────────────────────────────

@@ -39,6 +39,8 @@ export interface ProductImage {
 
 export interface CartItem extends Product {
   quantity: number;
+  selected_size?: string;
+  selected_color?: string;
   out_of_stock?: boolean;
   insufficient_stock?: boolean;
 }

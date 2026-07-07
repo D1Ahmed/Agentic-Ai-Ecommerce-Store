@@ -27,6 +27,8 @@ def _cart_item_payload(row: Any) -> dict:
         "rating": product.rating,
         "reviews_count": product.reviews_count,
         "quantity": quantity,
+        "selected_size": row.selected_size,
+        "selected_color": row.selected_color,
         "out_of_stock": out_of_stock,
         "insufficient_stock": insufficient_stock,
     }
@@ -60,12 +62,16 @@ async def sync_user_cart(user_id: int, items: List[dict]) -> List[dict]:
         for item in items:
             product_id = int(item["product_id"])
             quantity = max(1, int(item.get("quantity", 1)))
-            if product_id in merged_items:
-                merged_items[product_id] += quantity
+            selected_size = item.get("selected_size")
+            selected_color = item.get("selected_color")
+            
+            key = (product_id, selected_size, selected_color)
+            if key in merged_items:
+                merged_items[key] += quantity
             else:
-                merged_items[product_id] = quantity
+                merged_items[key] = quantity
 
-        for product_id, quantity in merged_items.items():
+        for (product_id, size, color), quantity in merged_items.items():
             product = await db.product.find_unique(where={"id": product_id})
             if not product:
                 continue
@@ -74,6 +80,8 @@ async def sync_user_cart(user_id: int, items: List[dict]) -> List[dict]:
                     "user_id": user_id,
                     "product_id": product_id,
                     "quantity": quantity,
+                    "selected_size": size,
+                    "selected_color": color,
                 }
             )
 
