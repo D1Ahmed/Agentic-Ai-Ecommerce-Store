@@ -18,7 +18,7 @@ const STORE_CATEGORIES = [
 ];
 
 export default function SellerRegisterPage() {
-  const { user, isAuthenticated } = useStore();
+  const { user, isAuthenticated, refreshSession } = useStore();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -62,7 +62,8 @@ export default function SellerRegisterPage() {
         description: form.description.trim() || undefined,
       });
       // Reload user data to get updated role
-      window.location.href = "/seller/dashboard";
+      await refreshSession();
+      router.push("/seller/dashboard");
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Failed to register store");
     } finally {

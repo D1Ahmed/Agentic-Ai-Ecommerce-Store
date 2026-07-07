@@ -17,7 +17,7 @@ import { ArrowLeft, Trash2, CornerDownRight, MessageSquare, Star, Package, Edit,
 import type { Review, ProductQuestion } from "@/types";
 
 export default function ProductManagePage() {
-  const { isAuthenticated, isAuthLoading, products } = useStore();
+  const { isAuthenticated, isAuthLoading, products, fetchProducts } = useStore();
   const router = useRouter();
   const { id } = useParams();
   const productId = Number(id);
@@ -56,14 +56,14 @@ export default function ProductManagePage() {
     try {
       if (product.is_on_sale) {
         await toggleProductSale(product.id, false, 0);
-        window.location.reload();
+        await fetchProducts();
       } else {
         const pct = prompt("Enter sale percentage (e.g. 20):");
         if (!pct) return;
         const num = Number(pct);
         if (isNaN(num) || num <= 0 || num > 100) return alert("Invalid percentage");
         await toggleProductSale(product.id, true, num);
-        window.location.reload();
+        await fetchProducts();
       }
     } catch (err) {
       alert("Failed to toggle sale");

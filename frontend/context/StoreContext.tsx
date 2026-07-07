@@ -596,6 +596,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         handleAIAction,
         isHaggleMode,
         fetchProducts: loadProducts,
+        refreshSession: loadSession,
         executeOrder,
         placePartialOrder,
         isPlacingOrder,
