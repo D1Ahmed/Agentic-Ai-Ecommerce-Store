@@ -107,6 +107,8 @@ export interface Review {
   rating: number;
   title?: string | null;
   body: string;
+  reply?: string | null;
+  is_deleted?: boolean;
   created_at: string;
 }
 
