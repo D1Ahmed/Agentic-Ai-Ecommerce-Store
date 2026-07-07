@@ -80,6 +80,27 @@ async def update_store(store_id: int, owner_id: int, data: Dict[str, Any]) -> An
         return await db.store.update(where={"id": store_id}, data=update_data)
 
 
+async def delete_store(store_id: int, owner_id: int) -> None:
+    """Delete a store and all its products, and reset the user's role."""
+    async with get_db() as db:
+        store = await db.store.find_unique(where={"id": store_id})
+        if not store or store.owner_id != owner_id:
+            raise ValueError("Store not found or access denied")
+
+        # 1. Delete all products individually so Supabase images are cleaned up
+        products = await db.product.find_many(where={"store_id": store_id})
+        for p in products:
+            await delete_seller_product(p.id, store_id)
+
+        # 2. Delete the store itself (cascades collections etc. via DB)
+        await db.store.delete(where={"id": store_id})
+
+        # 3. Change user role back to customer
+        await db.user.update(
+            where={"id": owner_id},
+            data={"role": "customer"}
+        )
+
 # ── Collections ───────────────────────────────────────────────────────────────
 
 async def create_collection(store_id: int, name: str, description: Optional[str] = None) -> Any:

@@ -79,6 +79,20 @@ async def update_my_store(body: StoreUpdateRequest, user=Depends(get_current_use
     return _store_response(updated)
 
 
+@router.delete("/me")
+async def delete_my_store(user=Depends(get_current_user)):
+    """Delete the current user's store."""
+    from services.store_service import delete_store
+    store = await get_store_by_owner(user.id)
+    if not store:
+        raise HTTPException(status_code=404, detail="You don't have a store yet")
+    try:
+        await delete_store(store.id, user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"status": "deleted"}
+
+
 @router.get("/{store_id}")
 async def public_store(store_id: int):
     """Get public store profile."""

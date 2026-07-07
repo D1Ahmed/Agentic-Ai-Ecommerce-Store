@@ -242,6 +242,10 @@ export async function updateMyStore(data: {
   return res.data;
 }
 
+export async function deleteStore(): Promise<void> {
+  await api.delete("/store/me");
+}
+
 // ── Seller Collections ───────────────────────────────────────────────────────
 
 export async function createCollection(data: {

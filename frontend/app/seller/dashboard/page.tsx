@@ -10,6 +10,7 @@ import {
   createCollection,
   deleteCollection,
   fetchMyProducts,
+  deleteStore,
 } from "@/lib/api";
 import type { Store, Collection } from "@/types";
 import {
@@ -103,6 +104,19 @@ export default function SellerDashboardPage() {
     }
   };
 
+  const handleDeleteStore = async () => {
+    if (!confirm("Are you absolutely sure you want to delete your store and ALL your products? This action cannot be undone.")) return;
+    try {
+      setLoading(true);
+      await deleteStore();
+      // Force reload session in context
+      window.location.href = "/"; // Hard redirect to clear all states
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || "Failed to delete store");
+      setLoading(false);
+    }
+  };
+
   if (loading || isAuthLoading) {
     return (
       <div className="min-h-screen bg-white">
@@ -144,7 +158,14 @@ export default function SellerDashboardPage() {
                 ))}
               </div>
             </div>
-
+            
+            <button
+              onClick={handleDeleteStore}
+              className="mt-4 md:mt-0 flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+            >
+              <Trash2 size={14} />
+              Delete Store
+            </button>
           </div>
 
           {/* Quick Stats */}
