@@ -6,7 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.deps import get_current_user
 from models.schemas import StoreRegisterRequest, StoreUpdateRequest, StoreResponse
-from services.store_service import create_store, get_store_by_owner, get_store_by_id, update_store
+from services.store_service import (
+    create_store, get_store_by_owner, get_store_by_id, update_store,
+    subscribe_store, unsubscribe_store, is_subscribed
+)
 
 router = APIRouter(prefix="/store", tags=["Store"])
 
@@ -94,3 +97,21 @@ async def public_store(store_id: int):
         for c in (store.collections or [])
     ]
     return resp
+
+
+@router.post("/{store_id}/subscribe")
+async def subscribe_to_store(store_id: int, user=Depends(get_current_user)):
+    """Subscribe to store notifications."""
+    return await subscribe_store(user.id, store_id)
+
+@router.delete("/{store_id}/unsubscribe")
+async def unsubscribe_from_store(store_id: int, user=Depends(get_current_user)):
+    """Unsubscribe from store notifications."""
+    return await unsubscribe_store(user.id, store_id)
+
+@router.get("/{store_id}/is-subscribed")
+async def check_store_subscription(store_id: int, user=Depends(get_current_user)):
+    """Check if the current user is subscribed to the store."""
+    subscribed = await is_subscribed(user.id, store_id)
+    return {"is_subscribed": subscribed}
+

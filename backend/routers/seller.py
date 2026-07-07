@@ -14,6 +14,7 @@ from models.schemas import (
     SellerProductUpdate,
     ProductSaleToggle,
     AnswerRequest,
+    ReplyRequest,
 )
 from services.store_service import (
     get_store_by_owner,
@@ -30,6 +31,9 @@ from services.store_service import (
     get_seller_products,
     get_unanswered_questions,
     answer_question,
+    reply_review,
+    delete_review_comment,
+    delete_question,
 )
 
 router = APIRouter(prefix="/seller", tags=["Seller"])
@@ -364,4 +368,31 @@ async def answer_q(question_id: int, body: AnswerRequest, user=Depends(get_curre
         q = await answer_question(question_id, store.id, body.answer)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return {"status": "answered", "id": q.id}
+    return {"status": "ok", "id": q.id}
+
+@router.delete("/questions/{question_id}")
+async def delete_product_question(question_id: int, user=Depends(get_current_user)):
+    store = await _require_store(user)
+    try:
+        await delete_question(question_id, store.id)
+        return {"status": "success"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/reviews/{review_id}/reply")
+async def reply_product_review(review_id: int, body: ReplyRequest, user=Depends(get_current_user)):
+    store = await _require_store(user)
+    try:
+        updated = await reply_review(review_id, store.id, body.reply)
+        return {"status": "success"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/reviews/{review_id}/comment")
+async def delete_product_review_comment(review_id: int, user=Depends(get_current_user)):
+    store = await _require_store(user)
+    try:
+        await delete_review_comment(review_id, store.id)
+        return {"status": "success"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
