@@ -65,6 +65,8 @@ model User {
   store         Store?
   reviews       Review[]
   questions     ProductQuestion[]
+  notifications Notification[]
+  subscriptions StoreSubscription[]
 }
 
 model Session {
@@ -129,6 +131,7 @@ model Store {
   owner         User           @relation(fields: [owner_id], references: [id], onDelete: Cascade)
   collections   Collection[]
   products      Product[]
+  subscriptions StoreSubscription[]
 }
 
 model Collection {
@@ -162,11 +165,25 @@ model Review {
   rating        Int
   title         String?
   body          String
+  reply         String?
+  is_deleted    Boolean        @default(false)
   created_at    DateTime       @default(now())
   product       Product        @relation(fields: [product_id], references: [id], onDelete: Cascade)
   user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([product_id, user_id])
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  type        String   
+  title       String
+  message     String
+  link        String?  
+  is_read     Boolean  @default(false)
+  created_at  DateTime @default(now())
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model ProductQuestion {
@@ -179,4 +196,15 @@ model ProductQuestion {
   created_at    DateTime       @default(now())
   product       Product        @relation(fields: [product_id], references: [id], onDelete: Cascade)
   user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model StoreSubscription {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  store_id   Int
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  store      Store    @relation(fields: [store_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, store_id])
 }

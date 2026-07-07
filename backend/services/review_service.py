@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, List
 
 from db.client import get_db
+from services.notification_service import create_notification
 
 
 async def has_purchased_product(user_id: int, product_id: int) -> bool:
@@ -61,6 +62,18 @@ async def create_review(
                 },
             )
 
+        # Notify seller
+        product = await db.product.find_unique(where={"id": product_id}, include={"store": True})
+        if product and product.store:
+            seller_id = product.store.owner_id
+            await create_notification(
+                user_id=seller_id,
+                notif_type="new_review",
+                title=f"New review on {product.name}",
+                message=f"A customer gave a {rating}-star review.",
+                link=f"/seller/products/manage/{product_id}"
+            )
+
         return review
 
 
@@ -76,13 +89,26 @@ async def get_product_reviews(product_id: int) -> List[Any]:
 
 async def create_question(product_id: int, user_id: int, question: str) -> Any:
     async with get_db() as db:
-        return await db.productquestion.create(
+        question_record = await db.productquestion.create(
             data={
                 "product_id": product_id,
                 "user_id": user_id,
                 "question": question,
             }
         )
+
+        product = await db.product.find_unique(where={"id": product_id}, include={"store": True})
+        if product and product.store:
+            seller_id = product.store.owner_id
+            await create_notification(
+                user_id=seller_id,
+                notif_type="new_question",
+                title=f"New question on {product.name}",
+                message="A customer asked a question about this product.",
+                link=f"/seller/products/manage/{product_id}"
+            )
+
+        return question_record
 
 
 async def get_product_questions(product_id: int) -> List[Any]:

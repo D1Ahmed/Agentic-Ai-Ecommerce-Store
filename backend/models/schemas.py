@@ -196,7 +196,12 @@ class ReviewResponse(BaseModel):
     rating: int
     title: Optional[str] = None
     body: str
+    reply: Optional[str] = None
+    is_deleted: bool = False
     created_at: str
+
+class ReplyRequest(BaseModel):
+    reply: str = Field(min_length=2)
 
 
 # ── Product Q&A ───────────────────────────────────────────────────────────────

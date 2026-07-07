@@ -11,6 +11,7 @@ import httpx
 
 from core.config import SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_BUCKET
 from db.client import get_db
+from services.notification_service import create_notification
 
 
 # ── Store Registration ────────────────────────────────────────────────────────
@@ -215,6 +216,19 @@ async def create_seller_product(store_id: int, data: Dict[str, Any]) -> Any:
                 "stock": data.get("stock", 10),
             }
         )
+        
+        store = await db.store.find_unique(where={"id": store_id})
+        subs = await db.storesubscription.find_many(where={"store_id": store_id})
+        if store:
+            for sub in subs:
+                await create_notification(
+                    user_id=sub.user_id,
+                    notif_type="new_product",
+                    title="New Arrival!",
+                    message=f"{store.name} just dropped a new product: {product.name}",
+                    link=f"/collections/{product.id}"
+                )
+                
         return product
 
 
@@ -370,10 +384,80 @@ async def answer_question(question_id: int, store_id: int, answer: str) -> Any:
             raise ValueError("Question not found or access denied")
 
         from datetime import datetime, timezone
-        return await db.productquestion.update(
+        updated = await db.productquestion.update(
             where={"id": question_id},
             data={
                 "answer": answer,
                 "answered_at": datetime.now(timezone.utc),
             },
         )
+        
+        await create_notification(
+            user_id=question.user_id,
+            notif_type="question_answered",
+            title=f"Seller answered your question",
+            message=f"The seller for {question.product.name} has answered your question.",
+            link=f"/collections/{question.product_id}"
+        )
+        return updated
+
+async def delete_question(question_id: int, store_id: int) -> None:
+    async with get_db() as db:
+        question = await db.productquestion.find_unique(where={"id": question_id}, include={"product": True})
+        if not question or not question.product or question.product.store_id != store_id:
+            raise ValueError("Question not found or access denied")
+        await db.productquestion.delete(where={"id": question_id})
+
+async def reply_review(review_id: int, store_id: int, reply: str) -> Any:
+    async with get_db() as db:
+        review = await db.review.find_unique(where={"id": review_id}, include={"product": True})
+        if not review or not review.product or review.product.store_id != store_id:
+            raise ValueError("Review not found or access denied")
+        
+        updated = await db.review.update(
+            where={"id": review_id},
+            data={"reply": reply}
+        )
+
+        await create_notification(
+            user_id=review.user_id,
+            notif_type="review_reply",
+            title=f"Seller replied to your review",
+            message=f"The seller for {review.product.name} replied to your review.",
+            link=f"/collections/{review.product_id}"
+        )
+        return updated
+
+async def delete_review_comment(review_id: int, store_id: int) -> Any:
+    async with get_db() as db:
+        review = await db.review.find_unique(where={"id": review_id}, include={"product": True})
+        if not review or not review.product or review.product.store_id != store_id:
+            raise ValueError("Review not found or access denied")
+        
+        return await db.review.update(
+            where={"id": review_id},
+            data={"is_deleted": True, "body": "", "reply": None}
+        )
+
+# ── Store Subscriptions ───────────────────────────────────────────────────────
+
+async def subscribe_store(user_id: int, store_id: int) -> dict:
+    async with get_db() as db:
+        existing = await db.storesubscription.find_first(where={"user_id": user_id, "store_id": store_id})
+        if existing:
+            return {"status": "already_subscribed"}
+        await db.storesubscription.create(data={"user_id": user_id, "store_id": store_id})
+        return {"status": "subscribed"}
+
+async def unsubscribe_store(user_id: int, store_id: int) -> dict:
+    async with get_db() as db:
+        existing = await db.storesubscription.find_first(where={"user_id": user_id, "store_id": store_id})
+        if existing:
+            await db.storesubscription.delete(where={"id": existing.id})
+            return {"status": "unsubscribed"}
+        return {"status": "not_subscribed"}
+
+async def is_subscribed(user_id: int, store_id: int) -> bool:
+    async with get_db() as db:
+        existing = await db.storesubscription.find_first(where={"user_id": user_id, "store_id": store_id})
+        return existing is not None
