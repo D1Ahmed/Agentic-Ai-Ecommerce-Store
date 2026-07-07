@@ -20,7 +20,7 @@ const GUEST_CART_KEY = "hdwear_guest_cart";
 const STORED_USER_KEY = "hdwear_user";
 const STORED_CART_KEY = "hdwear_server_cart";
 
-const api = axios.create({ baseURL: API_BASE_URL });
+export const api = axios.create({ baseURL: API_BASE_URL });
 
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
