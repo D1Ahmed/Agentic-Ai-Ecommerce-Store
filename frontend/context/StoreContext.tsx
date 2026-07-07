@@ -32,6 +32,7 @@ import {
   setStoredCart,
   fetchNotifications,
   registerStore,
+  createCollection,
 } from "@/lib/api";
 import type { Product, CartItem, User } from "@/types";
 
@@ -651,6 +652,38 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (err: any) {
         console.error("[AI] Failed to create store:", err);
         Swal.fire({ icon: "error", title: "Store creation failed", text: err?.response?.data?.detail || "Please try again." });
+      }
+      return;
+    }
+
+    if (action === "NAVIGATE_SELLER_DASHBOARD") {
+      router.push("/seller/dashboard");
+      return;
+    }
+
+    if (action.startsWith("CREATE_COLLECTIONS:")) {
+      const rawNames = action.replace("CREATE_COLLECTIONS:", "");
+      const names = rawNames.split(",").map(n => n.trim()).filter(Boolean);
+      
+      if (names.length > 0) {
+        try {
+          await Promise.all(names.map(name => createCollection({ name })));
+          Swal.fire({
+            icon: 'success',
+            title: 'Collections Created!',
+            text: `Successfully created ${names.length} collections.`,
+            timer: 2000,
+            showConfirmButton: false
+          });
+          router.push("/seller/dashboard");
+        } catch (err: any) {
+          console.error("Failed to create collections:", err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: err?.response?.data?.detail || "Failed to create some collections.",
+          });
+        }
       }
       return;
     }
