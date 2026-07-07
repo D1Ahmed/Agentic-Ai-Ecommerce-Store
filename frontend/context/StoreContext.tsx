@@ -29,6 +29,7 @@ import {
   setStoredUser,
   getStoredCart,
   setStoredCart,
+  fetchNotifications,
 } from "@/lib/api";
 import type { Product, CartItem, User } from "@/types";
 
@@ -44,6 +45,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCartState] = useState<CartItem[]>(cachedCart);
   const [user, setUser] = useState<User | null>(cachedUser);
+  const [notifications, setNotifications] = useState<any[]>([]);
   // If we have a cached user, we don't need to show the loading state —
   // we're optimistically showing them as logged in while we validate in background.
   const [isAuthLoading, setIsAuthLoading] = useState(!cachedUser && !!getStoredToken());
@@ -185,6 +187,14 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     loadProducts();
     loadSession();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications().then(setNotifications).catch(() => {});
+    } else {
+      setNotifications([]);
+    }
+  }, [isAuthenticated]);
 
   const mergeCarts = (local: CartItem[], server: CartItem[]): CartItem[] => {
     const merged = new Map<number, CartItem>();
@@ -595,6 +605,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         forceBillingItemId,
         setForceBillingItemId,
         discountPercentage,
+        setDiscountPercentage,
+        notifications,
+        setNotifications,
       }}
     >
       {children}

@@ -3,14 +3,15 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
-import { ShoppingBag, Search, X, User, LogOut, LogIn, UserPlus, Menu, Store } from "lucide-react";
+import { ShoppingBag, Search, X, User, LogOut, LogIn, UserPlus, Menu, Store, Bell } from "lucide-react";
+import { markNotificationRead } from "@/lib/api";
 
 export default function Navbar({
   transparent = false,
 }: {
   transparent?: boolean;
 }) {
-  const { cart, user, isAuthenticated, isAuthLoading, logout } = useStore();
+  const { cart, user, isAuthenticated, isAuthLoading, logout, notifications, setNotifications } = useStore();
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -19,8 +20,12 @@ export default function Navbar({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const isActive = (path: string) => pathname === path;
+  
+  const unreadCount = notifications.filter((n: any) => !n.is_read).length;
 
   useEffect(() => {
     setMounted(true);
@@ -28,10 +33,24 @@ export default function Navbar({
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setIsProfileOpen(false);
       }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setIsNotifOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleNotifClick = async (notif: any) => {
+    if (!notif.is_read) {
+      await markNotificationRead(notif.id);
+      setNotifications((prev: any[]) => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+    }
+    setIsNotifOpen(false);
+    if (notif.link) {
+      router.push(notif.link);
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,20 +195,69 @@ export default function Navbar({
           </button>
         </Link>
 
+        {mounted && isAuthenticated && (
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              className={`relative p-3 rounded-full transition-all duration-500 shadow-lg ${
+                transparent
+                  ? "bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-black"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 text-[9px] w-5 h-5 rounded-full flex items-center justify-center font-black border-2 bg-red-500 text-white border-white">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {isNotifOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden z-[200] max-h-96 overflow-y-auto">
+                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 font-black text-sm uppercase tracking-widest text-slate-900 sticky top-0">
+                  Notifications
+                </div>
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    No new notifications
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {notifications.map(n => (
+                      <button
+                        key={n.id}
+                        onClick={() => handleNotifClick(n)}
+                        className={`text-left p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!n.is_read ? 'bg-blue-50/30' : ''}`}
+                      >
+                        <p className={`text-xs font-black mb-1 ${!n.is_read ? 'text-slate-900' : 'text-slate-600'}`}>{n.title}</p>
+                        <p className="text-[10px] text-slate-500 leading-relaxed mb-2">{n.message}</p>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{new Date(n.created_at).toLocaleDateString()}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => !isAuthLoading && setIsProfileOpen((open) => !open)}
             className={`p-3 rounded-full transition-all duration-500 shadow-lg ${
               transparent
                 ? "bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-black"
-                : isAuthLoading
-                  ? "bg-slate-200 text-slate-400 cursor-wait animate-pulse"
-                  : isAuthenticated
-                    ? "bg-blue-600 text-white hover:bg-slate-900"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : !mounted 
+                  ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  : isAuthLoading
+                    ? "bg-slate-200 text-slate-400 cursor-wait animate-pulse"
+                    : isAuthenticated
+                      ? "bg-blue-600 text-white hover:bg-slate-900"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
-            title={isAuthLoading ? "Loading..." : isAuthenticated ? user?.name : "Account"}
-            disabled={isAuthLoading}
+            title={!mounted ? "Account" : isAuthLoading ? "Loading..." : isAuthenticated ? user?.name : "Account"}
+            disabled={!mounted || isAuthLoading}
           >
             <User size={20} />
           </button>

@@ -14,7 +14,7 @@ import type {
   SellerNotification,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 const TOKEN_KEY = "hdwear_token";
 const GUEST_CART_KEY = "hdwear_guest_cart";
 const STORED_USER_KEY = "hdwear_user";
@@ -340,11 +340,30 @@ export async function answerQuestion(questionId: number, answer: string): Promis
   return res.data;
 }
 
-export async function fetchSellerNotifications(): Promise<{
-  count: number;
-  questions: SellerNotification[];
-}> {
-  const res = await api.get("/seller/notifications");
+export async function deleteQuestion(questionId: number): Promise<any> {
+  const res = await api.delete(`/seller/questions/${questionId}`);
+  return res.data;
+}
+
+export async function replyReview(reviewId: number, reply: string): Promise<any> {
+  const res = await api.post(`/seller/reviews/${reviewId}/reply`, { reply });
+  return res.data;
+}
+
+export async function deleteReviewComment(reviewId: number): Promise<any> {
+  const res = await api.delete(`/seller/reviews/${reviewId}/comment`);
+  return res.data;
+}
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+export async function fetchNotifications(): Promise<any[]> {
+  const res = await api.get("/notifications");
+  return res.data;
+}
+
+export async function markNotificationRead(id: number): Promise<any> {
+  const res = await api.patch(`/notifications/${id}/read`);
   return res.data;
 }
 
@@ -356,4 +375,21 @@ export async function trackProductView(productId: number): Promise<void> {
   } catch {
     // Non-critical
   }
+}
+
+// ── Store Subscriptions ───────────────────────────────────────────────────────
+
+export async function subscribeToStore(storeId: number): Promise<any> {
+  const res = await api.post(`/store/${storeId}/subscribe`);
+  return res.data;
+}
+
+export async function unsubscribeFromStore(storeId: number): Promise<any> {
+  const res = await api.delete(`/store/${storeId}/unsubscribe`);
+  return res.data;
+}
+
+export async function checkStoreSubscription(storeId: number): Promise<{ is_subscribed: boolean }> {
+  const res = await api.get(`/store/${storeId}/is-subscribed`);
+  return res.data;
 }
