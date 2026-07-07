@@ -20,7 +20,17 @@ export default function NewArrivalsPage() {
 
   const newestProducts = useMemo(() => {
     if (!products) return [];
-    return [...products].reverse().slice(0, 8);
+    const tenDaysAgo = new Date();
+    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+
+    return products
+      .filter((p: any) => {
+        // Seeded products (no store) stay forever, others expire in 10 days
+        if (!p.store_id) return true;
+        return new Date(p.created_at) > tenDaysAgo;
+      })
+      .reverse()
+      .slice(0, 40);
   }, [products]);
 
   const visibleProducts = useMemo(() => {

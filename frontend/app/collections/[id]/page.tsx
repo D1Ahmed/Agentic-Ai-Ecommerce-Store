@@ -41,7 +41,8 @@ export default function InspectionWindow() {
   const [activeTab, setActiveTab] = useState<"details" | "reviews" | "qa">("details");
   
   // Forms
-  const [reviewForm, setReviewForm] = useState({ rating: 5, body: "" });
+  const [reviewForm, setReviewForm] = useState({ rating: 0, body: "" });
+  const [hoverRating, setHoverRating] = useState(0);
   const [questionText, setQuestionText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -56,7 +57,9 @@ export default function InspectionWindow() {
     if (product.image_url) imgs.push(product.image_url);
     if (product.images && product.images.length > 0) {
       // Add other images, excluding the primary if it's already added
-      const others = product.images.filter((img: any) => img.url !== product.image_url).map((img: any) => img.url);
+      const others = product.images
+        .filter((img: any) => (img.url || img.image_url) !== product.image_url)
+        .map((img: any) => img.url || img.image_url);
       imgs = [...imgs, ...others];
     }
     // Fallback
@@ -112,13 +115,14 @@ export default function InspectionWindow() {
 
   const handlePostReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewForm.body.trim()) return;
+    if (!reviewForm.body.trim() || reviewForm.rating === 0) return;
     setSubmitting(true);
     try {
       const newRev = await postReview(product.id, reviewForm);
       setReviews([newRev, ...reviews]);
       setCanReview(false);
-      setReviewForm({ rating: 5, body: "" });
+      setReviewForm({ rating: 0, body: "" });
+      setHoverRating(0);
     } catch (err: any) {
       alert(err?.response?.data?.detail || "Failed to post review");
     } finally {
@@ -396,9 +400,14 @@ export default function InspectionWindow() {
                               key={star} 
                               type="button" 
                               onClick={() => setReviewForm(prev => ({...prev, rating: star}))}
-                              className="focus:outline-none"
+                              onMouseEnter={() => setHoverRating(star)}
+                              onMouseLeave={() => setHoverRating(0)}
+                              className="focus:outline-none transition-transform hover:scale-110"
                             >
-                              <Star size={24} className={star <= reviewForm.rating ? "text-yellow-400 fill-yellow-400" : "text-slate-200"} />
+                              <Star 
+                                size={24} 
+                                className={(hoverRating || reviewForm.rating) >= star ? "text-yellow-400 fill-yellow-400" : "text-slate-200"} 
+                              />
                             </button>
                           ))}
                         </div>
@@ -415,7 +424,7 @@ export default function InspectionWindow() {
                       </div>
                       <button 
                         type="submit" 
-                        disabled={submitting}
+                        disabled={submitting || reviewForm.rating === 0}
                         className="bg-slate-900 text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-600 transition-colors disabled:opacity-50"
                       >
                         {submitting ? "Posting..." : "Submit Review"}
@@ -444,7 +453,19 @@ export default function InspectionWindow() {
                             ))}
                           </div>
                         </div>
-                        <p className="text-sm text-slate-600 mt-2">{review.body}</p>
+                        <div className="text-sm text-slate-600 mt-2">
+                          {review.is_deleted ? (
+                            <span className="italic text-slate-400">This comment was hidden by the seller.</span>
+                          ) : (
+                            review.body
+                          )}
+                        </div>
+                        {review.reply && (
+                          <div className="mt-3 bg-blue-50 border-l-2 border-blue-600 p-3 rounded-r-xl">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-800 mb-1">Seller Response</p>
+                            <p className="text-xs text-slate-700 italic">"{review.reply}"</p>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
