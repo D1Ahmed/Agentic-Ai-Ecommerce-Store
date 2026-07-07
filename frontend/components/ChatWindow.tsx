@@ -151,7 +151,7 @@ export default function ChatWindow() {
           dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
           dragElastic={0.6}
           onDragEnd={handleDragEnd}
-          className={`fixed inset-0 md:inset-auto w-full h-full md:w-[440px] md:h-[640px] bg-white md:rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] border border-slate-100 flex flex-col z-[9999] overflow-hidden ${
+          className={`fixed top-0 inset-x-0 md:inset-auto w-full h-[100dvh] md:w-[440px] md:h-[640px] bg-white md:rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] border border-slate-100 flex flex-col z-[9999] overflow-hidden pb-[env(safe-area-inset-bottom)] md:pb-0 ${
             side === "right" ? "md:bottom-8 md:right-8" : "md:bottom-8 md:left-8"
           }`}
         >
@@ -325,7 +325,7 @@ export default function ChatWindow() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask for outfits, add to cart, checkout..."
                 rows={1}
-                className="flex-1 pl-4 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-600 focus:border-transparent text-base md:text-xs text-slate-900 font-medium outline-none transition-all placeholder:text-slate-400 resize-none"
+                className="flex-1 pl-4 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-600 focus:border-transparent text-[16px] md:text-[14px] text-slate-900 font-medium outline-none transition-all placeholder:text-slate-400 resize-none"
               />
               <button
                 onClick={sendMessage}
