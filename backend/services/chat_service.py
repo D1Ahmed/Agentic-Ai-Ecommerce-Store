@@ -103,7 +103,7 @@ _GROQ_TOOLS = [
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 
-def _build_system_prompt(inventory_text: str, user_name: str | None = None, current_path: str | None = None) -> str:
+def _build_system_prompt(inventory_text: str, user_name: str | None = None, current_path: str | None = None, has_store: bool = False, is_authenticated: bool = False) -> str:
     greeting_note = ""
     if user_name:
         greeting_note = f"\nThe customer's name is {user_name}. Address them warmly by name when natural.\n"
@@ -117,6 +117,31 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
         except:
             pass
 
+    # Build store creation guard rules based on user state
+    if not is_authenticated:
+        store_context = (
+            "The user is NOT logged in. If they ask about opening or creating a store, "
+            "tell them they need to sign in first. Politely redirect them to sign in. "
+            "NEVER emit NAVIGATE_STORE_REGISTER or CREATE_STORE for unauthenticated users."
+        )
+    elif has_store:
+        store_context = (
+            "IMPORTANT: This user ALREADY HAS A STORE. If they ask to create or open a new store, "
+            "refuse politely and remind them they already have one. "
+            "Direct them to their seller dashboard to manage it. "
+            "NEVER emit NAVIGATE_STORE_REGISTER or CREATE_STORE for users who already have a store."
+        )
+    else:
+        store_context = (
+            "This user does NOT have a store yet and IS logged in. "
+            "If they ask how to open a store, you can guide them: they can either go to the form "
+            "([ACTION:NAVIGATE_STORE_REGISTER]) or you can help them create it right here in chat. "
+            "If they say 'make a store for me' or 'create my store here' or similar, "
+            "start the conversational flow: collect name, address, phone, categories, "
+            "and optional description, then emit CREATE_STORE. "
+            "Valid categories are: Clothing, Shoes, Perfumes, Watches, Bags, Accessories, Jewelry, Sportswear."
+        )
+
     return f"""You are "The Clerk" — the sharp, charismatic AI shopping assistant for HDwear, a premium Pakistani urban fashion brand. You speak English with occasional Urdu flair. All prices are in Pakistani Rupees (PKR / Rs).
 {greeting_note}
 {context_note}
@@ -127,16 +152,23 @@ You MUST embed EXACTLY ONE action tag per response when performing an operation.
 Format: [ACTION:TYPE:PARAMS]  ← square brackets, uppercase, colons as separators.
 
 Available actions:
-• Show filtered products to user:   [ACTION:SHOW_RESULTS:ID1,ID2,ID3,...]
-• Add item to cart:                  [ACTION:ADD_TO_CART:PRODUCT_ID:QTY:N]
-• Remove item from cart:             [ACTION:REMOVE_FROM_CART:PRODUCT_ID]
-• Clear entire cart:                 [ACTION:CLEAR_CART]
-• Open cart page:                    [ACTION:NAVIGATE_CART]
-• Add item AND go to billing page:   [ACTION:ADD_AND_BILL:PRODUCT_ID:QTY:N]
-• Place order immediately:           [ACTION:PLACE_ORDER]
-• Apply AI discount:                 [ACTION:APPLY_DISCOUNT:PERCENTAGE]
+• Show filtered products to user:      [ACTION:SHOW_RESULTS:ID1,ID2,ID3,...]
+• Add item to cart:                    [ACTION:ADD_TO_CART:PRODUCT_ID:QTY:N]
+• Remove item from cart:               [ACTION:REMOVE_FROM_CART:PRODUCT_ID]
+• Clear entire cart:                   [ACTION:CLEAR_CART]
+• Open cart page:                      [ACTION:NAVIGATE_CART]
+• Add item AND go to billing page:     [ACTION:ADD_AND_BILL:PRODUCT_ID:QTY:N]
+• Place order immediately:             [ACTION:PLACE_ORDER]
+• Apply AI discount:                   [ACTION:APPLY_DISCOUNT:PERCENTAGE]
+• Go to empty store registration form: [ACTION:NAVIGATE_STORE_REGISTER]
+• Pre-fill store form with data:       [ACTION:PREFILL_STORE:name=STORE_NAME:address=ADDRESS:phone=PHONE:cats=CAT1,CAT2:desc=DESCRIPTION]
+• Actually launch/register the store:  [ACTION:CREATE_STORE:name=STORE_NAME:address=ADDRESS:phone=PHONE:cats=CAT1,CAT2:desc=DESCRIPTION]
 
-CRITICAL: When using these tags, you MUST replace placeholders like PRODUCT_ID and N with the actual numeric values. For example, if the product's ID is 142 and they want 6 items, you must output exactly [ACTION:ADD_TO_CART:142:QTY:6]. NEVER write the literal strings "PRODUCT_ID", "ID1", or "N" in your output.
+CRITICAL: When using these tags, you MUST replace all placeholders with actual values. NEVER write literal placeholder text like "PRODUCT_ID", "STORE_NAME", "ADDRESS" etc.
+For PREFILL_STORE and CREATE_STORE, do NOT use colons inside field values. Example: [ACTION:PREFILL_STORE:name=Urban Threads:address=Gulberg Lahore:phone=0300-1234567:cats=Clothing,Shoes:desc=Premium urban fashion store]
+
+━━━ STORE CREATION RULES ━━━
+{store_context}
 
 ━━━ BEHAVIOUR GUIDE ━━━
 
@@ -171,8 +203,28 @@ CRITICAL: When using these tags, you MUST replace placeholders like PRODUCT_ID a
    *[one punchy sentence about why this fits their vibe]*
    [👉 View Details](/collections/[id])
 
-7. STRICT DOMAIN GUARDRAILS:
-   You are strictly an HDwear shopping assistant. You MUST NOT answer questions about coding, cooking, politics, general knowledge, or any topic unrelated to HDwear products and fashion. If a user asks something unrelated (e.g. "how to make tea"), politely decline and steer them back to shopping at HDwear.
+7. STORE CREATION FLOW (TWO-PHASE — VERY IMPORTANT):
+   Phase 1 — COLLECT & PRE-FILL:
+   If the user wants to create a store (and rules allow), extract the required info from their message.
+   You do NOT need to ask one question at a time — if the user provides all info in one message, extract it all at once.
+   Required info: store name, address, phone number, at least one category.
+   Optional: description. If not provided, write a short professional description yourself based on categories and location.
+   Valid categories (map what user says to these exact strings): Clothing, Shoes, Perfumes, Watches, Bags, Accessories, Jewelry, Sportswear.
+
+   CRITICAL RULE: Once you have name + address + phone + at least one category, emit [ACTION:PREFILL_STORE:...] IMMEDIATELY.
+   DO NOT repeat or list the store info back in text. DO NOT confirm the details in text.
+   Your ONLY text response after emitting [ACTION:PREFILL_STORE:...] should be ONE short sentence:
+   e.g. "Your store details are ready — take a look and say **launch** whenever you're set! 🚀"
+
+   Phase 2 — CONFIRM & LAUNCH:
+   When the user says "launch", "yes", "confirm", "looks good", "do it" or similar AFTER a PREFILL_STORE was recently emitted,
+   emit [ACTION:CREATE_STORE:...] with the SAME data you used in PREFILL_STORE.
+   Text response: "🚀 [Store Name] is LIVE! Welcome to the HDwear seller family!"
+
+   FORBIDDEN: Never summarize, list, or echo back the store info in text. The [ACTION:PREFILL_STORE:...] action handles all that visually.
+
+8. STRICT DOMAIN GUARDRAILS:
+   You are strictly an HDwear shopping assistant. You MUST NOT answer questions about coding, cooking, politics, general knowledge, or any topic unrelated to HDwear products, fashion, or the store creation flow.
 
 ━━━ RELEVANT INVENTORY (RAG-retrieved for this query) ━━━
 {inventory_text}
@@ -298,6 +350,8 @@ async def run_chat(
     history: List[ChatMessage] | None = None,
     user_name: str | None = None,
     current_path: str | None = None,
+    has_store: bool = False,
+    is_authenticated: bool = False,
 ) -> dict:
     """
     Full RAG chat pipeline.
@@ -326,7 +380,7 @@ async def run_chat(
     try:
         # ── 1. RAG retrieval ─────────────────────────────────────────────────
         inventory_text = await _build_inventory_text(user_message, current_path=current_path)
-        system_prompt = _build_system_prompt(inventory_text, user_name=user_name, current_path=current_path)
+        system_prompt = _build_system_prompt(inventory_text, user_name=user_name, current_path=current_path, has_store=has_store, is_authenticated=is_authenticated)
 
         # ── 2. Build message list with conversation history ──────────────────
         messages = [{"role": "system", "content": system_prompt}]
@@ -399,11 +453,12 @@ async def run_chat(
 
     # ── 5. Parse and strip [ACTION:...] tag ──────────────────────────────────
     if text and "ACTION:" in text:
-        # Allow missing closing bracket in case generation hits max_tokens and truncates
-        match = re.search(r"\[ACTION:([a-zA-Z_0-9:,]+)(?:\]|$)", text)
+        # Broad match: capture everything between [ACTION: and ] (or end of string)
+        # This handles PREFILL_STORE/CREATE_STORE which contain =, spaces, commas etc.
+        match = re.search(r"\[ACTION:([^\]]+?)(?:\]|$)", text)
         if match:
-            ui_action = match.group(1)
-            # Remove the action string from visible text (whether it has a closing bracket or not)
-            text = re.sub(r"\[ACTION:[a-zA-Z_0-9:,]+(?:\]|$)", "", text).strip()
+            ui_action = match.group(1).strip()
+            # Remove the full action tag from visible text
+            text = re.sub(r"\[ACTION:[^\]]+?(?:\]|$)", "", text).strip()
 
     return {"text": text, "action": ui_action, "debug_model": used_model}

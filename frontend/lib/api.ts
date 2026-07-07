@@ -193,13 +193,17 @@ export async function sendChatMessage(
   message: string,
   history: ChatHistoryMessage[] = [],
   userName?: string | null,
-  currentPath?: string | null
+  currentPath?: string | null,
+  hasStore?: boolean,
+  isAuthenticated?: boolean
 ): Promise<ChatResponse> {
   const res = await api.post<ChatResponse>("/ai/chat", {
     user_message: message,
     history,
     user_name: userName || null,
     current_path: currentPath || null,
+    has_store: hasStore || false,
+    is_authenticated: isAuthenticated || false,
   });
   return res.data;
 }

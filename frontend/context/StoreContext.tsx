@@ -16,6 +16,7 @@ import {
   loginUser,
   logoutUser,
   fetchMe,
+  fetchMyStore,
   fetchCart,
   syncCart,
   clearCart,
@@ -30,6 +31,7 @@ import {
   getStoredCart,
   setStoredCart,
   fetchNotifications,
+  registerStore,
 } from "@/lib/api";
 import type { Product, CartItem, User } from "@/types";
 
@@ -54,6 +56,14 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [forceBillingItemId, setForceBillingItemId] = useState<number | null>(null);
   const [discountPercentage, setDiscountPercentage] = useState(0);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [hasStore, setHasStore] = useState(false);
+  const [pendingStoreData, setPendingStoreData] = useState<{
+    name: string;
+    address: string;
+    phone: string;
+    description: string;
+    categories: string[];
+  } | null>(null);
 
   const placingOrderRef = useRef(false);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -165,6 +175,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       setStoredCart(serverCart); // Cache fresh cart
       latestCartRef.current = serverCart;
       setGuestCart([]);
+
+      // Check if the user already has a store (silent — don't break auth on failure)
+      fetchMyStore().then(() => setHasStore(true)).catch(() => setHasStore(false));
 
       cartReadyRef.current = true;
     } catch {
@@ -478,7 +491,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleAIAction = (action: string) => {
+  const handleAIAction = async (action: string) => {
     if (action.startsWith("APPLY_DISCOUNT:")) {
       const discountVal = parseInt(action.replace("APPLY_DISCOUNT:", ""));
       setDiscountPercentage(discountVal);
@@ -581,6 +594,67 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    if (action === "NAVIGATE_STORE_REGISTER") {
+      router.push("/seller/register");
+      return;
+    }
+
+    if (action.startsWith("PREFILL_STORE:")) {
+      // Parse: PREFILL_STORE:name=X:address=Y:phone=Z:cats=A,B:desc=D
+      const raw = action.replace("PREFILL_STORE:", "");
+      const pairs: Record<string, string> = {};
+      raw.split(/:(?=[a-z]+=)/i).forEach((chunk) => {
+        const eqIdx = chunk.indexOf("=");
+        if (eqIdx !== -1) {
+          const k = chunk.slice(0, eqIdx).toLowerCase().trim();
+          const v = chunk.slice(eqIdx + 1).trim();
+          pairs[k] = v;
+        }
+      });
+      const cats = (pairs["cats"] || "").split(",").map((c) => c.trim()).filter(Boolean);
+      setPendingStoreData({
+        name: pairs["name"] || "",
+        address: pairs["address"] || "",
+        phone: pairs["phone"] || "",
+        description: pairs["desc"] || "",
+        categories: cats,
+      });
+      router.push("/seller/register");
+      return;
+    }
+
+    if (action.startsWith("CREATE_STORE:")) {
+      // Parse: CREATE_STORE:name=X:address=Y:phone=Z:cats=A,B:desc=D
+      try {
+        const raw = action.replace("CREATE_STORE:", "");
+        const pairs: Record<string, string> = {};
+        // Split on ":" but only where preceded by a key name (word chars)
+        raw.split(/:(?=[a-z]+=)/i).forEach((chunk) => {
+          const eqIdx = chunk.indexOf("=");
+          if (eqIdx !== -1) {
+            const k = chunk.slice(0, eqIdx).toLowerCase().trim();
+            const v = chunk.slice(eqIdx + 1).trim();
+            pairs[k] = v;
+          }
+        });
+        const cats = (pairs["cats"] || "").split(",").map((c) => c.trim()).filter(Boolean);
+        await registerStore({
+          name: pairs["name"] || "My Store",
+          address: pairs["address"] || "",
+          phone: pairs["phone"] || "",
+          categories: cats,
+          description: pairs["desc"] || undefined,
+        });
+        setHasStore(true);
+        await loadSession();
+        router.push("/seller/dashboard");
+      } catch (err: any) {
+        console.error("[AI] Failed to create store:", err);
+        Swal.fire({ icon: "error", title: "Store creation failed", text: err?.response?.data?.detail || "Please try again." });
+      }
+      return;
+    }
+
     switch (action) {
       case "SORT_PRICE_ASC":
         setProducts([...products].sort((a, b) => a.price - b.price));
@@ -619,6 +693,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         updateProfile,
         handleAIAction,
         isHaggleMode,
+        hasStore,
+        setHasStore,
+        pendingStoreData,
+        setPendingStoreData,
         fetchProducts: loadProducts,
         refreshSession: loadSession,
         executeOrder,

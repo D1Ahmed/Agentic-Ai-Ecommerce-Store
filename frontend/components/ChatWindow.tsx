@@ -14,7 +14,7 @@ interface Message {
 }
 
 export default function ChatWindow() {
-  const { handleAIAction, user } = useStore();
+  const { handleAIAction, user, hasStore, isAuthenticated } = useStore();
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -34,8 +34,9 @@ export default function ChatWindow() {
           "- **Find clothes** — *Show me winter jackets for men*\n" +
           "- **Add to cart** — *Add the Midnight Urban Tee to my cart*\n" +
           "- **Buy instantly** — *I want to buy the Arctic Puffer, take me to checkout*\n" +
-          "- **Negotiate prices** — *I'm a student, can I get a deal?*\n\n" +
-          "What are you looking for today?",
+          "- **Negotiate prices** — *I'm a student, can I get a deal?*\n" +
+          (!hasStore && isAuthenticated ? "- **Open a store** — *Help me open my store*\n" : "") +
+          "\nWhat are you looking for today?",
       },
     ]);
   }, [user?.id, user?.name]);
@@ -81,7 +82,7 @@ export default function ChatWindow() {
 
     try {
       const history = buildHistory();
-      const { text, action } = await sendChatMessage(userMsg, history, user?.name, pathname);
+      const { text, action } = await sendChatMessage(userMsg, history, user?.name, pathname, hasStore, isAuthenticated);
 
       setMessages((prev) => [...prev, { role: "ai", text }]);
 

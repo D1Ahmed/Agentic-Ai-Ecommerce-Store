@@ -1,10 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
 import Navbar from "@/components/Navbar";
 import { registerStore } from "@/lib/api";
-import { Store, MapPin, Phone, FileText, Tag, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { Store, MapPin, Phone, FileText, Tag, ArrowRight, Sparkles, CheckCircle2, Bot } from "lucide-react";
 
 const STORE_CATEGORIES = [
   "Clothing",
@@ -18,10 +18,11 @@ const STORE_CATEGORIES = [
 ];
 
 export default function SellerRegisterPage() {
-  const { user, isAuthenticated, refreshSession } = useStore();
+  const { user, isAuthenticated, refreshSession, pendingStoreData, setPendingStoreData, setHasStore } = useStore();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [aiPrefilled, setAiPrefilled] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -30,6 +31,20 @@ export default function SellerRegisterPage() {
     description: "",
     categories: [] as string[],
   });
+
+  // Auto-fill form from AI agent data if available
+  useEffect(() => {
+    if (pendingStoreData) {
+      setForm({
+        name: pendingStoreData.name,
+        address: pendingStoreData.address,
+        phone: pendingStoreData.phone,
+        description: pendingStoreData.description,
+        categories: pendingStoreData.categories,
+      });
+      setAiPrefilled(true);
+    }
+  }, [pendingStoreData]);
 
   const toggleCategory = (cat: string) => {
     setForm((prev) => ({
@@ -61,6 +76,9 @@ export default function SellerRegisterPage() {
         categories: form.categories,
         description: form.description.trim() || undefined,
       });
+      // Clear pending store data and mark store as created
+      setPendingStoreData(null);
+      setHasStore(true);
       // Reload user data to get updated role
       await refreshSession();
       router.push("/seller/dashboard");
@@ -125,6 +143,16 @@ export default function SellerRegisterPage() {
             {error && (
               <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-bold">
                 {error}
+              </div>
+            )}
+
+            {aiPrefilled && (
+              <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 px-4 py-3 rounded-xl">
+                <Bot size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-blue-700 text-xs font-black uppercase tracking-wider">AI Agent Pre-filled Your Store</p>
+                  <p className="text-blue-600 text-xs font-medium mt-0.5">Review the details below and click <strong>Launch Your Store</strong> when you're ready!</p>
+                </div>
               </div>
             )}
 

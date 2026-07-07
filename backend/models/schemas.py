@@ -81,6 +81,8 @@ class ChatRequest(BaseModel):
     history: Optional[List[ChatMessage]] = []
     user_name: Optional[str] = None
     current_path: Optional[str] = None
+    has_store: Optional[bool] = False
+    is_authenticated: Optional[bool] = False
 
 
 class ChatResponse(BaseModel):

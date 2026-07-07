@@ -17,4 +17,6 @@ async def chat_with_clerk(request: ChatRequest):
         history=request.history or [],
         user_name=request.user_name,
         current_path=request.current_path,
+        has_store=request.has_store or False,
+        is_authenticated=request.is_authenticated or False,
     )
