@@ -18,12 +18,13 @@ import {
   Star,
   MoreVertical,
   Loader2,
+  MessageCircle,
   Image as ImageIcon
 } from "lucide-react";
 
 export default function SellerCollectionPage() {
   const { id } = useParams();
-  const { isAuthenticated, isAuthLoading } = useStore();
+  const { isAuthenticated, isAuthLoading, notifications } = useStore();
   const router = useRouter();
 
   const [products, setProducts] = useState<SellerProduct[]>([]);
@@ -152,9 +153,14 @@ export default function SellerCollectionPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
+            {products.map((product) => {
+              const hasUnread = notifications?.some((n: any) => !n.is_read && n.link === `/seller/products/manage/${product.id}`);
+              return (
               <div key={product.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden group">
-                <div className="relative aspect-[4/5] bg-slate-50 overflow-hidden">
+                <div 
+                  className="relative aspect-[4/5] bg-slate-50 overflow-hidden cursor-pointer"
+                  onClick={() => router.push(`/seller/products/manage/${product.id}`)}
+                >
                   {product.image_url ? (
                     <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   ) : (
@@ -180,10 +186,16 @@ export default function SellerCollectionPage() {
                   {/* Menu */}
                   <div className="absolute top-3 right-3">
                     <button
-                      onClick={() => setActiveMenu(activeMenu === product.id ? null : product.id)}
-                      className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenu(activeMenu === product.id ? null : product.id);
+                      }}
+                      className="relative w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
                     >
                       <MoreVertical size={16} />
+                      {hasUnread && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                      )}
                     </button>
                     
                     {activeMenu === product.id && (
@@ -193,6 +205,10 @@ export default function SellerCollectionPage() {
                         </Link>
                         <Link href={`/seller/products/edit/${product.id}`} className="w-full px-4 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2">
                           <Edit size={14} /> Edit Details
+                        </Link>
+                        <Link href={`/seller/products/manage/${product.id}`} className="w-full px-4 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                          <MessageCircle size={14} /> Manage Interactions
+                          {hasUnread && <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>}
                         </Link>
                         <button 
                           onClick={() => handleToggleSale(product.id, product.is_on_sale, product.sale_percentage)}
@@ -213,7 +229,10 @@ export default function SellerCollectionPage() {
                   </div>
                 </div>
 
-                <div className="p-5">
+                <div 
+                  className="p-5 cursor-pointer"
+                  onClick={() => router.push(`/seller/products/manage/${product.id}`)}
+                >
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-black text-sm uppercase tracking-tight text-slate-900 line-clamp-1 flex-1 pr-2">
                       {product.name}
@@ -243,7 +262,7 @@ export default function SellerCollectionPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
       </main>

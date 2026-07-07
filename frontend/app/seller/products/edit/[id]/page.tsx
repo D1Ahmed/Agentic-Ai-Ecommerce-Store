@@ -121,8 +121,10 @@ export default function ProductEditPage() {
         size_options: product.size_options ? JSON.parse(product.size_options) : [],
       });
 
-      setExistingImages(product.images || []);
-
+      setExistingImages((product.images || []).map((img: any) => ({
+        ...img,
+        url: img.url || img.image_url
+      })));
     } catch (err) {
       console.error(err);
       setError("Failed to load product data");

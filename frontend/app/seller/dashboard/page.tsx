@@ -9,10 +9,9 @@ import {
   fetchMyCollections,
   createCollection,
   deleteCollection,
-  fetchSellerNotifications,
   fetchMyProducts,
 } from "@/lib/api";
-import type { Store, Collection, SellerNotification } from "@/types";
+import type { Store, Collection } from "@/types";
 import {
   FolderOpen,
   Plus,
@@ -34,14 +33,12 @@ export default function SellerDashboardPage() {
 
   const [store, setStore] = useState<Store | null>(null);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [notifications, setNotifications] = useState<{ count: number; questions: SellerNotification[] }>({ count: 0, questions: [] });
   const [stats, setStats] = useState({ totalProducts: 0, totalViews: 0, totalSales: 0 });
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [creating, setCreating] = useState(false);
-  const [showNotifs, setShowNotifs] = useState(false);
 
   useEffect(() => {
     if (isAuthLoading) return;
@@ -55,10 +52,9 @@ export default function SellerDashboardPage() {
   const loadDashboard = async () => {
     setLoading(true);
     try {
-      const [storeData, cols, notifs, products] = await Promise.all([
+      const [storeData, cols, products] = await Promise.all([
         fetchMyStore().catch(() => null),
         fetchMyCollections().catch(() => []),
-        fetchSellerNotifications().catch(() => ({ count: 0, questions: [] })),
         fetchMyProducts().catch(() => []),
       ]);
 
@@ -69,7 +65,6 @@ export default function SellerDashboardPage() {
 
       setStore(storeData);
       setCollections(cols);
-      setNotifications(notifs);
       setStats({
         totalProducts: products.length,
         totalViews: products.reduce((s: number, p: any) => s + (p.view_count || 0), 0),
@@ -150,20 +145,6 @@ export default function SellerDashboardPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {/* Notifications Bell */}
-              <button
-                onClick={() => setShowNotifs(!showNotifs)}
-                className="relative p-3 bg-white/10 backdrop-blur-md rounded-xl text-white hover:bg-white/20 transition-all border border-white/10"
-              >
-                <Bell size={20} />
-                {notifications.count > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                    {notifications.count}
-                  </span>
-                )}
-              </button>
-            </div>
           </div>
 
           {/* Quick Stats */}
@@ -191,39 +172,6 @@ export default function SellerDashboardPage() {
           </div>
         </div>
       </section>
-
-      {/* Notifications Panel */}
-      {showNotifs && notifications.count > 0 && (
-        <div className="max-w-6xl mx-auto px-6 mt-4">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-xl p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-black text-sm uppercase tracking-tight flex items-center gap-2">
-                <Bell size={14} className="text-red-500" /> Unanswered Questions
-              </h3>
-              <button onClick={() => setShowNotifs(false)} className="text-slate-400 hover:text-slate-900">
-                <X size={16} />
-              </button>
-            </div>
-            <div className="space-y-3">
-              {notifications.questions.map((q) => (
-                <div key={q.id} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                  <p className="text-xs text-slate-400 mb-1">
-                    <span className="font-bold text-slate-600">{q.user_name}</span> asked about{" "}
-                    <span className="font-bold text-blue-600">{q.product_name}</span>
-                  </p>
-                  <p className="text-sm font-medium text-slate-900">&ldquo;{q.question}&rdquo;</p>
-                  <Link
-                    href={`/collections/${q.product_id}`}
-                    className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-2 inline-block hover:underline"
-                  >
-                    View Product →
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Collections Grid */}
       <main className="max-w-6xl mx-auto px-6 py-12">
