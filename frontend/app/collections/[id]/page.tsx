@@ -261,9 +261,11 @@ export default function InspectionWindow() {
                       </Link>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-blue-600 font-black text-sm bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
-                    <Star size={16} fill="currentColor" /> {product.rating || "New"}
-                  </div>
+                  {product.rating > 0 && (
+                    <div className="flex items-center gap-2 text-blue-600 font-black text-sm bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
+                      <Star size={16} fill="currentColor" /> {product.rating}
+                    </div>
+                  )}
                 </div>
 
                 <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-4 leading-none text-slate-900">

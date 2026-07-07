@@ -323,16 +323,16 @@ export default function CartPage() {
                         {/* Details */}
                         <div className="flex-1 flex flex-col justify-between min-w-0">
                           {/* Top row */}
-                          <div className="flex justify-between items-start gap-3">
-                            <div className="min-w-0">
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-3">
+                            <div className="min-w-0 w-full">
                               <h3 className="font-bold text-base text-slate-900 leading-snug truncate">
                                 {item.name}
                               </h3>
-                              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5 flex gap-2">
+                              <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1 flex flex-wrap gap-x-2 gap-y-1">
                                 <span>{item.category}</span>
                                 {item.selected_size && <span>| Size: {item.selected_size}</span>}
                                 {item.selected_color && <span>| Color: {item.selected_color}</span>}
-                              </p>
+                              </div>
 
                               {/* Stock badge */}
                               <div className="mt-2 flex items-center gap-2">
@@ -363,7 +363,7 @@ export default function CartPage() {
                             </div>
 
                             {/* Price */}
-                            <div className="text-right flex-shrink-0">
+                            <div className="text-left sm:text-right flex-shrink-0 mt-2 sm:mt-0">
                               <p className="font-black text-lg text-slate-900">
                                 Rs {(item.price * (item.quantity || 1)).toLocaleString()}
                               </p>
@@ -374,14 +374,14 @@ export default function CartPage() {
                           </div>
 
                           {/* Bottom row: qty + actions */}
-                          <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 gap-3">
                             {/* Quantity controls — only if in stock */}
                             {!outOfStock && (
-                              <div className="flex items-center gap-1 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                              <div className="flex items-center gap-1 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden w-fit">
                                 <button
                                   onClick={() => updateQuantity(item.id, (item.quantity || 1) - 1)}
                                   disabled={(item.quantity || 1) <= 1}
-                                  className="px-3 py-2.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                  className="px-3 py-2 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                   <Minus size={13} />
                                 </button>
@@ -391,7 +391,7 @@ export default function CartPage() {
                                 <button
                                   onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
                                   disabled={(item.quantity || 1) >= (item.stock || 1)}
-                                  className="px-3 py-2.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                  className="px-3 py-2 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                   <Plus size={13} />
                                 </button>
@@ -399,17 +399,17 @@ export default function CartPage() {
                             )}
 
                             {/* Actions */}
-                            <div className="flex items-center gap-2 ml-auto">
+                            <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto">
                               <button
                                 onClick={() => removeFromCart(item.id)}
-                                className="flex items-center gap-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 text-[10px] font-black uppercase tracking-wider px-3 py-2.5 rounded-xl transition border border-transparent hover:border-red-100"
+                                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 text-[10px] font-black uppercase tracking-wider px-3 py-2.5 rounded-xl transition border border-red-100 hover:border-red-200"
                               >
                                 <Trash2 size={13} /> Remove
                               </button>
                               {!outOfStock && (
                                 <button
                                   onClick={() => handleBuyThisItem(item)}
-                                  className="flex items-center gap-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider px-4 py-2.5 rounded-xl hover:bg-slate-900 transition shadow-lg active:scale-95"
+                                  className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider px-4 py-2.5 rounded-xl hover:bg-slate-900 transition shadow-lg active:scale-95"
                                 >
                                   <Zap size={13} /> Buy Now
                                 </button>

@@ -256,9 +256,11 @@ export default function SellerCollectionPage() {
                     <div className="flex items-center gap-1.5 text-slate-400" title="Purchases">
                       <ShoppingCart size={14} /> <span className="text-[10px] font-bold">{product.purchase_count || 0}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-400" title="Rating">
-                      <Star size={14} className={product.rating > 0 ? "text-yellow-400" : ""} /> <span className="text-[10px] font-bold">{product.rating || 0}</span>
-                    </div>
+                    {product.rating > 0 && (
+                      <div className="flex items-center gap-1.5 text-slate-400" title="Rating">
+                        <Star size={14} className="text-yellow-400" fill="yellow" /> <span className="text-[10px] font-bold">{product.rating}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

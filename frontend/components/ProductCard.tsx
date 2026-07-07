@@ -41,10 +41,12 @@ export default function ProductCard({ product }: { product: any }) {
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />
           <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-            <span className="bg-black/80 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-xl w-fit">
-              <Star size={10} fill="yellow" className="text-yellow-400" />{" "}
-              {product.rating || "4.5"}
-            </span>
+            {product.rating > 0 && (
+              <span className="bg-black/80 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-xl w-fit">
+                <Star size={10} fill="yellow" className="text-yellow-400" />{" "}
+                {product.rating}
+              </span>
+            )}
             {product.is_on_sale && product.sale_percentage > 0 && (
               <span className="bg-red-600 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl w-fit">
                 {product.sale_percentage}% OFF
