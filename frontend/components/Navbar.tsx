@@ -224,7 +224,7 @@ export default function Navbar({
                   </div>
                 ) : (
                   <div className="flex flex-col">
-                    {notifications.map(n => (
+                    {notifications.map((n: any) => (
                       <button
                         key={n.id}
                         onClick={() => handleNotifClick(n)}
