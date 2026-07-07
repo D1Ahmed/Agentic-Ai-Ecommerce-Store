@@ -14,7 +14,8 @@ import {
   AlertCircle,
   PackageCheck,
   Loader2,
-  DollarSign
+  DollarSign,
+  Plus
 } from "lucide-react";
 
 const CATEGORIES = ["Clothing", "Shoes", "Perfumes", "Watches", "Bags", "Accessories", "Jewelry", "Sportswear"];
