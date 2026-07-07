@@ -190,7 +190,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchNotifications().then(setNotifications).catch(() => {});
+      const loadNotifs = () => fetchNotifications().then(setNotifications).catch(() => {});
+      loadNotifs();
+      const intervalId = setInterval(loadNotifs, 10000); // Poll every 10 seconds
+      return () => clearInterval(intervalId);
     } else {
       setNotifications([]);
     }
