@@ -25,8 +25,6 @@ export default function NewArrivalsPage() {
 
     return products
       .filter((p: any) => {
-        // Seeded products (no store) stay forever, others expire in 10 days
-        if (!p.store_id) return true;
         return new Date(p.created_at) > tenDaysAgo;
       })
       .reverse()

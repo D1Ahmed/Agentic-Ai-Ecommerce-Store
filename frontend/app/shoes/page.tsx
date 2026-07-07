@@ -19,7 +19,7 @@ export default function ShoesPage() {
 
   const shoeProductsFromDB = useMemo(() => {
     if (!products) return [];
-    return products.filter((p: any) => p.sub_category === "Shoes");
+    return products.filter((p: any) => p.category === "Shoes");
   }, [products]);
 
   const visibleProducts = useMemo(() => {
