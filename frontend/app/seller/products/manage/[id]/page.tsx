@@ -32,7 +32,7 @@ export default function ProductManagePage() {
   const [submittingReviewId, setSubmittingReviewId] = useState<number | null>(null);
   const [submittingQuestionId, setSubmittingQuestionId] = useState<number | null>(null);
 
-  const product = products.find((p) => String(p.id) === String(productId));
+  const product = products.find((p: any) => String(p.id) === String(productId));
 
   const loadData = async () => {
     if (isNaN(productId)) return;
