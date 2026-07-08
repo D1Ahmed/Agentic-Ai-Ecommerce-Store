@@ -110,6 +110,10 @@ export async function searchProducts(query: string): Promise<Product[]> {
   return res.data;
 }
 
+export async function adminDeleteProduct(id: number): Promise<void> {
+  await api.delete(`/products/${id}`);
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export async function registerUser(data: {

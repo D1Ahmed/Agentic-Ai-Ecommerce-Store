@@ -57,7 +57,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [forceBillingItemId, setForceBillingItemId] = useState<number | null>(null);
   const [discountPercentage, setDiscountPercentage] = useState(0);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [hasStore, setHasStore] = useState(false);
+  const [hasStore, setHasStore] = useState(cachedUser?.has_store || false);
   const [pendingStoreData, setPendingStoreData] = useState<{
     name: string;
     address: string;
@@ -66,6 +66,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     categories: string[];
   } | null>(null);
 
+  const [optimisticCollections, setOptimisticCollections] = useState<any[]>([]);
+  
   const placingOrderRef = useRef(false);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestCartRef = useRef<CartItem[]>(cachedCart);
@@ -177,8 +179,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       latestCartRef.current = serverCart;
       setGuestCart([]);
 
-      // Check if the user already has a store (silent — don't break auth on failure)
-      fetchMyStore().then(() => setHasStore(true)).catch(() => setHasStore(false));
+      setHasStore(me.has_store || false);
 
       cartReadyRef.current = true;
     } catch {
@@ -252,6 +253,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setStoredUser(res.user);
     setStoredCart(serverCart);
     setUser(res.user);
+    setHasStore(res.user.has_store || false);
     cartReadyRef.current = true;
 
     return res.user;
@@ -275,6 +277,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setStoredUser(res.user);
     setStoredCart(finalCart);
     setUser(res.user);
+    setHasStore(res.user.has_store || false);
     cartReadyRef.current = true;
 
     return res.user;
@@ -299,6 +302,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setStoredUser(res.user);
     setStoredCart(serverCart);
     setUser(res.user);
+    setHasStore(res.user.has_store || false);
     cartReadyRef.current = true;
 
     return res.user;
@@ -666,24 +670,41 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       const names = rawNames.split(",").map(n => n.trim()).filter(Boolean);
       
       if (names.length > 0) {
-        try {
-          await Promise.all(names.map(name => createCollection({ name })));
-          Swal.fire({
-            icon: 'success',
-            title: 'Collections Created!',
-            text: `Successfully created ${names.length} collections.`,
-            timer: 2000,
-            showConfirmButton: false
+        // Optimistic UI Update - inject fake collections instantly
+        const fakeCollections = names.map((name, i) => ({
+          id: -1000 - i, // negative ID to indicate it's temporary
+          name,
+          description: "Creating...",
+          product_count: 0
+        }));
+        setOptimisticCollections(fakeCollections);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Setting up Collections!',
+          text: `Creating ${names.length} collections in the background...`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+        
+        router.push("/seller/dashboard");
+
+        // Run API in the background
+        Promise.all(names.map(name => createCollection({ name })))
+          .then(() => {
+            // Once real API succeeds, trigger a refresh to fetch real IDs
+            window.dispatchEvent(new Event("refresh_dashboard"));
+          })
+          .catch((err: any) => {
+            console.error("Failed to create collections:", err);
+            // Revert optimistic update on failure
+            setOptimisticCollections([]);
+            Swal.fire({
+              icon: 'error',
+              title: 'Oops...',
+              text: err?.response?.data?.detail || "Failed to create some collections.",
+            });
           });
-          router.push("/seller/dashboard");
-        } catch (err: any) {
-          console.error("Failed to create collections:", err);
-          Swal.fire({
-            icon: 'error',
-            title: 'Oops...',
-            text: err?.response?.data?.detail || "Failed to create some collections.",
-          });
-        }
       }
       return;
     }
@@ -744,6 +765,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         setDiscountPercentage,
         notifications,
         setNotifications,
+        optimisticCollections,
+        setOptimisticCollections,
       }}
     >
       {children}

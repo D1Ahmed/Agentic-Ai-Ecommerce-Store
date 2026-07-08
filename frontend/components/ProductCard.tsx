@@ -2,11 +2,14 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useStore } from "@/context/StoreContext";
-import { Plus, Minus, Eye, Star } from "lucide-react";
+import { Plus, Minus, Eye, Star, Trash2 } from "lucide-react";
+import { adminDeleteProduct } from "@/lib/api";
+import Swal from "sweetalert2";
 
 export default function ProductCard({ product }: { product: any }) {
-  const { cart, setCart } = useStore();
+  const { cart, setCart, user, fetchProducts } = useStore();
   const [qty, setQty] = useState(1); // Local state for quantity
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const addToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -24,6 +27,41 @@ export default function ProductCard({ product }: { product: any }) {
       setCart([...cart, { ...product, quantity: qty }]);
     }
     setQty(1); // Reset for next interaction
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user || user.role !== "admin") return;
+    
+    const result = await Swal.fire({
+      title: 'Delete Product?',
+      text: "This will safely delete the product and remove it from all carts.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    
+    if (result.isConfirmed) {
+      setIsDeleting(true);
+      try {
+        await adminDeleteProduct(product.id);
+        await Swal.fire({
+          title: 'Deleted!',
+          text: 'The product has been safely removed.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+        fetchProducts(); // Refresh products list
+      } catch (err: any) {
+        Swal.fire('Error', err?.response?.data?.detail || 'Failed to delete the product.', 'error');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
   };
 
   const stockCount = product.stock ?? 0;
@@ -51,6 +89,19 @@ export default function ProductCard({ product }: { product: any }) {
               <span className="bg-red-600 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl w-fit">
                 {product.sale_percentage}% OFF
               </span>
+            )}
+          </div>
+          
+          <div className="absolute top-4 right-4 z-20">
+            {user?.role === "admin" && (
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 hover:scale-110 transition-all"
+                title="Delete Product (Admin)"
+              >
+                <Trash2 size={16} />
+              </button>
             )}
           </div>
         </div>

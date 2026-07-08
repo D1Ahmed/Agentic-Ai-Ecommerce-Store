@@ -71,3 +71,8 @@ async def search_products(query: str) -> List:
             },
             include={"images": True, "store": True},
         )
+
+async def delete_product(product_id: int):
+    """Delete a product by ID."""
+    async with get_db() as db:
+        return await db.product.delete(where={"id": product_id})

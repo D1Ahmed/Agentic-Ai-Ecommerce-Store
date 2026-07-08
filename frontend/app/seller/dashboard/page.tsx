@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useStore } from "@/context/StoreContext";
 import Navbar from "@/components/Navbar";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchMyStore,
   fetchMyCollections,
@@ -29,95 +30,117 @@ import {
 } from "lucide-react";
 
 export default function SellerDashboardPage() {
-  const { user, isAuthenticated, isAuthLoading } = useStore();
+  const { user, isAuthenticated, isAuthLoading, optimisticCollections, setOptimisticCollections } = useStore();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const [store, setStore] = useState<Store | null>(null);
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [stats, setStats] = useState({ totalProducts: 0, totalViews: 0, totalSales: 0 });
-  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  const [creating, setCreating] = useState(false);
 
+  // Redirect if not authenticated
   useEffect(() => {
     if (isAuthLoading) return;
     if (!isAuthenticated) {
       router.push("/auth/signin");
-      return;
     }
-    loadDashboard();
-  }, [isAuthenticated, isAuthLoading]);
+  }, [isAuthenticated, isAuthLoading, router]);
 
-  const loadDashboard = async () => {
-    setLoading(true);
-    try {
+  // Use a single query to fetch all seller data to avoid waterfall and manage loading state easily
+  const { data: sellerData, isLoading: isLoadingData, error } = useQuery({
+    queryKey: ["sellerData"],
+    queryFn: async () => {
       const [storeData, cols, products] = await Promise.all([
         fetchMyStore().catch(() => null),
         fetchMyCollections().catch(() => []),
         fetchMyProducts().catch(() => []),
       ]);
+      
+      if (!storeData) throw new Error("No store");
+      
+      return { store: storeData, collections: cols, products };
+    },
+    enabled: isAuthenticated && !isAuthLoading,
+  });
 
-      if (!storeData) {
-        router.push("/seller/register");
-        return;
-      }
-
-      setStore(storeData);
-      setCollections(cols);
-      setStats({
-        totalProducts: products.length,
-        totalViews: products.reduce((s: number, p: any) => s + (p.view_count || 0), 0),
-        totalSales: products.reduce((s: number, p: any) => s + (p.purchase_count || 0), 0),
-      });
-    } catch {
+  // Handle redirect if no store
+  useEffect(() => {
+    if (error) {
       router.push("/seller/register");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [error, router]);
 
-  const handleCreateCollection = async () => {
-    if (!newName.trim()) return;
-    setCreating(true);
-    try {
-      await createCollection({ name: newName.trim(), description: newDesc.trim() || undefined });
+  // Keep the AI action refresh listener
+  useEffect(() => {
+    const handleRefresh = () => {
+       queryClient.invalidateQueries({ queryKey: ["sellerData"] });
+    };
+    window.addEventListener("refresh_dashboard", handleRefresh);
+    return () => window.removeEventListener("refresh_dashboard", handleRefresh);
+  }, [queryClient]);
+
+  // Clear optimistic collections when real data loads
+  useEffect(() => {
+    if (sellerData) {
+      setOptimisticCollections?.([]);
+    }
+  }, [sellerData, setOptimisticCollections]);
+
+  const createMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => createCollection(data),
+    onSuccess: () => {
       setNewName("");
       setNewDesc("");
       setShowCreate(false);
-      await loadDashboard();
-    } catch (err: any) {
+      queryClient.invalidateQueries({ queryKey: ["sellerData"] });
+    },
+    onError: (err: any) => {
       alert(err?.response?.data?.detail || "Failed to create collection");
-    } finally {
-      setCreating(false);
     }
-  };
+  });
 
-  const handleDeleteCollection = async (id: number) => {
-    if (!confirm("Delete this collection? Products inside won't be deleted.")) return;
-    try {
-      await deleteCollection(id);
-      await loadDashboard();
-    } catch (err: any) {
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteCollection(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sellerData"] });
+    },
+    onError: (err: any) => {
       alert(err?.response?.data?.detail || "Failed to delete");
     }
+  });
+
+  const handleCreateCollection = () => {
+    if (!newName.trim()) return;
+    createMutation.mutate({ name: newName.trim(), description: newDesc.trim() || undefined });
+  };
+
+  const handleDeleteCollection = (id: number) => {
+    if (!confirm("Delete this collection? Products inside won't be deleted.")) return;
+    deleteMutation.mutate(id);
   };
 
   const handleDeleteStore = async () => {
     if (!confirm("Are you absolutely sure you want to delete your store and ALL your products? This action cannot be undone.")) return;
     try {
-      setLoading(true);
       await deleteStore();
-      // Force reload session in context
-      window.location.href = "/"; // Hard redirect to clear all states
+      window.location.href = "/";
     } catch (err: any) {
       alert(err?.response?.data?.detail || "Failed to delete store");
-      setLoading(false);
     }
   };
 
-  if (loading || isAuthLoading) {
+  const loading = isAuthLoading || isLoadingData;
+  const store = sellerData?.store;
+  const collections = sellerData?.collections || [];
+  const products = sellerData?.products || [];
+  
+  const stats = {
+    totalProducts: products.length,
+    totalViews: products.reduce((s: number, p: any) => s + (p.view_count || 0), 0),
+    totalSales: products.reduce((s: number, p: any) => s + (p.purchase_count || 0), 0),
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-white">
         <Navbar />
@@ -250,10 +273,10 @@ export default function SellerDashboardPage() {
                 </button>
                 <button
                   onClick={handleCreateCollection}
-                  disabled={!newName.trim() || creating}
+                  disabled={!newName.trim() || createMutation.isPending}
                   className="flex-1 py-3 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                  {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                   Create
                 </button>
               </div>
@@ -262,7 +285,7 @@ export default function SellerDashboardPage() {
         )}
 
         {/* Collections */}
-        {collections.length === 0 ? (
+        {collections.length === 0 && (optimisticCollections || []).length === 0 ? (
           <div className="text-center py-24 bg-white rounded-3xl border border-slate-100">
             <FolderOpen size={48} className="mx-auto text-slate-200 mb-4" />
             <h3 className="font-black text-lg uppercase tracking-tight text-slate-300 mb-2">No Collections Yet</h3>
@@ -277,39 +300,49 @@ export default function SellerDashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {collections.map((col) => (
-              <div
-                key={col.id}
-                className="group bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-              >
-                <Link href={`/seller/collections/${col.id}`} className="block p-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <FolderOpen size={28} className="text-blue-600" />
+            {[...collections, ...(optimisticCollections || [])].map((col) => {
+              const isOptimistic = col.id < 0;
+              return (
+                <div
+                  key={col.id}
+                  className={`group bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 ${isOptimistic ? 'opacity-70 animate-pulse pointer-events-none' : 'hover:-translate-y-1'}`}
+                >
+                  <Link href={`/seller/collections/${col.id}`} className="block p-6">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative">
+                      <FolderOpen size={28} className="text-blue-600" />
+                      {isOptimistic && (
+                        <div className="absolute inset-0 bg-blue-100/50 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                          <Loader2 size={20} className="text-blue-600 animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="font-black text-lg uppercase tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
+                      {col.name}
+                    </h3>
+                    {col.description && (
+                      <p className="text-slate-400 text-xs mt-1 line-clamp-1">{col.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-4">
+                      <Package size={12} className="text-slate-300" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        {col.product_count} Product{col.product_count !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </Link>
+                  <div className="px-6 pb-4 flex justify-end">
+                    {!isOptimistic && (
+                      <button
+                        onClick={() => handleDeleteCollection(col.id)}
+                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete collection"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
-                  <h3 className="font-black text-lg uppercase tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
-                    {col.name}
-                  </h3>
-                  {col.description && (
-                    <p className="text-slate-400 text-xs mt-1 line-clamp-1">{col.description}</p>
-                  )}
-                  <div className="flex items-center gap-2 mt-4">
-                    <Package size={12} className="text-slate-300" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                      {col.product_count} Product{col.product_count !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                </Link>
-                <div className="px-6 pb-4 flex justify-end">
-                  <button
-                    onClick={() => handleDeleteCollection(col.id)}
-                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                    title="Delete collection"
-                  >
-                    <Trash2 size={14} />
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>

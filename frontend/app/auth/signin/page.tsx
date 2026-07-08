@@ -27,7 +27,13 @@ export default function SignInPage() {
       await login(email, password);
       router.push("/");
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Sign in failed. Please try again.");
+      const detail = err?.response?.data?.detail;
+      const errorMessage = typeof detail === 'string' 
+        ? detail 
+        : Array.isArray(detail) && detail.length > 0 && typeof detail[0].msg === 'string'
+          ? detail[0].msg
+          : "Sign in failed. Please try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -72,7 +78,7 @@ export default function SignInPage() {
               Email
             </label>
             <input
-              type="email"
+              type="text"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
