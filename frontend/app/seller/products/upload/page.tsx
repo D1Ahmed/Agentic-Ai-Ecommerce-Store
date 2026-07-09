@@ -31,15 +31,25 @@ const SUB_CATEGORIES = {
 };
 
 function UploadContent() {
-  const { isAuthenticated, isAuthLoading } = useStore();
+  const { 
+    isAuthenticated, 
+    isAuthLoading, 
+    pendingProductUpload, 
+    setPendingProductUpload,
+    collections: storeCollections,
+    optimisticCollections 
+  } = useStore();
+  
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultCollectionId = searchParams.get("collection_id");
 
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [collections, setCollections] = useState<Collection[]>([]);
+  
+  const collections = React.useMemo(() => 
+    [...(storeCollections || []), ...(optimisticCollections || [])], 
+  [storeCollections, optimisticCollections]);
 
   // Images state
   const [images, setImages] = useState<File[]>([]);
@@ -76,22 +86,45 @@ function UploadContent() {
       router.push("/auth/signin");
       return;
     }
-    loadData();
-  }, [isAuthenticated, isAuthLoading]);
-
-  const loadData = async () => {
-    try {
-      const cols = await fetchMyCollections();
-      setCollections(cols);
-      if (!defaultCollectionId && cols.length > 0) {
-        setForm(prev => ({ ...prev, collection_id: String(cols[0].id) }));
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+    
+    // Auto-select first collection if none is selected
+    if (!form.collection_id && collections.length > 0) {
+      setForm(prev => ({ ...prev, collection_id: String(collections[0].id) }));
     }
-  };
+  }, [isAuthenticated, isAuthLoading, collections, form.collection_id, router]);
+
+  // Consume AI prefilled data dynamically (even if already on the page)
+  useEffect(() => {
+    if (pendingProductUpload) {
+      setForm(prev => ({
+        ...prev,
+        name: pendingProductUpload.name || prev.name,
+        description: pendingProductUpload.description || prev.description,
+        detailed_description: pendingProductUpload.detailed_description || prev.detailed_description,
+        category: pendingProductUpload.category || prev.category,
+        sub_category: pendingProductUpload.sub_category || prev.sub_category,
+        color: pendingProductUpload.color || prev.color,
+        gender: pendingProductUpload.gender || prev.gender,
+        season: pendingProductUpload.season || prev.season,
+        material: pendingProductUpload.material || prev.material,
+        style: pendingProductUpload.style || prev.style,
+        occasion: pendingProductUpload.occasion || prev.occasion,
+      }));
+      
+      if (pendingProductUpload.imageFiles && pendingProductUpload.imageFiles.length > 0) {
+        setImages(pendingProductUpload.imageFiles);
+        setPreviewUrls(pendingProductUpload.imageFiles.map((f: File) => URL.createObjectURL(f)));
+      } else if (pendingProductUpload.imageFile) {
+        setImages([pendingProductUpload.imageFile]);
+        setPreviewUrls([URL.createObjectURL(pendingProductUpload.imageFile)]);
+      }
+      
+      // Clear it so it doesn't persist
+      setPendingProductUpload(null);
+    }
+  }, [pendingProductUpload, setPendingProductUpload]);
+
+
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -221,7 +254,7 @@ function UploadContent() {
     }
   };
 
-  if (loading || isAuthLoading) {
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 size={32} className="animate-spin text-blue-600" />
@@ -257,21 +290,34 @@ function UploadContent() {
           
           {/* Images Section */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-            <h2 className="text-sm font-black uppercase tracking-widest mb-6 border-b border-slate-100 pb-4">Product Images</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest mb-6 border-b border-slate-100 pb-4 text-slate-900">Product Images</h2>
             
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {previewUrls.map((url, idx) => (
                 <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-slate-200 group">
                   <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx)}
-                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
-                  >
-                    <X size={12} />
-                  </button>
+                  
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                    {idx !== 0 && (
+                      <button
+                        type="button"
+                        onClick={() => makePrimary(idx)}
+                        className="bg-white text-slate-900 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors shadow-lg"
+                      >
+                        Set Primary
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  
                   {idx === 0 && (
-                    <div className="absolute bottom-0 inset-x-0 bg-black/50 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest text-center py-1">
+                    <div className="absolute bottom-0 inset-x-0 bg-blue-600 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest text-center py-1">
                       Primary
                     </div>
                   )}
@@ -291,7 +337,7 @@ function UploadContent() {
 
           {/* Basic Info */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4">Basic Information</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4 text-slate-900">Basic Information</h2>
             
             <div>
               <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block">Product Name *</label>
@@ -330,7 +376,7 @@ function UploadContent() {
 
           {/* Pricing */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4">Pricing & Negotiation</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4 text-slate-900">Pricing & Negotiation</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -340,11 +386,11 @@ function UploadContent() {
                   <input type="number" min="0" required value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="0.00" className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
                 </div>
               </div>
-              <div>
+              <div className={form.is_negotiable ? "" : "opacity-50 pointer-events-none"}>
                 <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block">Minimum Acceptable Price (Rs) *</label>
                 <div className="relative">
                   <DollarSign size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="number" min="0" required value={form.min_price} onChange={e => setForm({...form, min_price: e.target.value})} placeholder="0.00" className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
+                  <input type="number" min="0" required={form.is_negotiable} disabled={!form.is_negotiable} value={form.min_price} onChange={e => setForm({...form, min_price: e.target.value})} placeholder="0.00" className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
                 </div>
                 <p className="text-xs text-slate-400 mt-2">The AI agent will not negotiate below this price.</p>
               </div>
@@ -361,7 +407,7 @@ function UploadContent() {
 
           {/* Categorization */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4">Categorization</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4 text-slate-900">Categorization</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
@@ -403,7 +449,7 @@ function UploadContent() {
 
           {/* AI Search Tags */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4 flex items-center gap-2">
+            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4 flex items-center gap-2 text-slate-900">
               <Sparkles size={16} className="text-blue-500" /> AI Discoverability
             </h2>
             <p className="text-xs text-slate-500 font-medium">Add these details to help the RAG agent match your product to customer searches.</p>
