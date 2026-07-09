@@ -12,6 +12,7 @@ import httpx
 from core.config import SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_BUCKET
 from db.client import get_db
 from services.notification_service import create_notification
+from services.product_service import clear_products_cache
 
 
 # ── Store Registration ────────────────────────────────────────────────────────
@@ -251,6 +252,7 @@ async def create_seller_product(store_id: int, data: Dict[str, Any]) -> Any:
                     link=f"/collections/{product.id}"
                 )
                 
+        clear_products_cache()
         return product
 
 
@@ -270,6 +272,7 @@ async def add_product_image(product_id: int, image_url: str, is_primary: bool = 
                 where={"id": product_id},
                 data={"image_url": image_url},
             )
+        clear_products_cache()
         return img
 
 
@@ -283,10 +286,12 @@ async def update_seller_product(product_id: int, store_id: int, data: Dict[str, 
         if not update_data:
             return product
 
-        return await db.product.update(
+        res = await db.product.update(
             where={"id": product_id},
             data=update_data,
         )
+        clear_products_cache()
+        return res
 
 
 async def delete_seller_product(product_id: int, store_id: int) -> None:
@@ -305,6 +310,7 @@ async def delete_seller_product(product_id: int, store_id: int) -> None:
 
         # Delete product (cascades to images, reviews, questions via DB)
         await db.product.delete(where={"id": product_id})
+        clear_products_cache()
 
 
 async def delete_product_image(image_id: int, store_id: int) -> None:
@@ -345,6 +351,7 @@ async def delete_product_image(image_id: int, store_id: int) -> None:
                     where={"id": image.product_id},
                     data={"image_url": next_img.image_url},
                 )
+        clear_products_cache()
 
 
 async def toggle_product_sale(product_id: int, store_id: int, is_on_sale: bool, sale_percentage: int) -> Any:
@@ -353,13 +360,15 @@ async def toggle_product_sale(product_id: int, store_id: int, is_on_sale: bool, 
         if not product or product.store_id != store_id:
             raise ValueError("Product not found or access denied")
 
-        return await db.product.update(
+        res = await db.product.update(
             where={"id": product_id},
             data={
                 "is_on_sale": is_on_sale,
                 "sale_percentage": sale_percentage if is_on_sale else 0,
             },
         )
+        clear_products_cache()
+        return res
 
 
 async def get_seller_products(store_id: int, collection_id: Optional[int] = None) -> List[Any]:

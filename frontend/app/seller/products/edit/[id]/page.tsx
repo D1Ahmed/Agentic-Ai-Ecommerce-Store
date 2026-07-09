@@ -6,6 +6,7 @@ import { useStore } from "@/context/StoreContext";
 import Navbar from "@/components/Navbar";
 import {
   fetchMyCollections,
+  fetchProductById,
   updateProduct,
   deleteProductImage,
   addProductImages,
@@ -97,12 +98,8 @@ export default function ProductEditPage() {
       const cols = await fetchMyCollections();
       setCollections(cols);
 
-      // Fetch the specific product directly from the public API or seller API
-      // We'll use the public API for simplicity as we just need the data to populate the form
-      // but ideally we should have a GET /seller/products/{id} endpoint
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/products`);
-      const allProducts = await res.json();
-      const product = allProducts.find((p: any) => p.id === productId);
+      // Fetch the specific product directly from the backend
+      const product = await fetchProductById(productId);
 
       if (!product) {
         setError("Product not found");
@@ -257,8 +254,23 @@ export default function ProductEditPage() {
 
   if (loading || isAuthLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-blue-600" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm max-w-4xl w-full animate-pulse">
+          <div className="h-4 bg-slate-200 rounded w-1/4 mb-8"></div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="aspect-square bg-slate-100 rounded-2xl"></div>
+            ))}
+          </div>
+          <div className="space-y-4">
+            <div className="h-10 bg-slate-100 rounded-xl w-full"></div>
+            <div className="h-32 bg-slate-100 rounded-xl w-full"></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="h-10 bg-slate-100 rounded-xl"></div>
+              <div className="h-10 bg-slate-100 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
