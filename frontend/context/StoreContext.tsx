@@ -34,7 +34,7 @@ import {
   registerStore,
   createCollection,
 } from "@/lib/api";
-import type { Product, CartItem, User } from "@/types";
+import type { Product, CartItem, User, Collection } from "@/types";
 
 const StoreContext = createContext<any>(null);
 

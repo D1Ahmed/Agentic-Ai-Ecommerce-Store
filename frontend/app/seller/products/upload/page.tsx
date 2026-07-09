@@ -161,6 +161,19 @@ function UploadContent() {
     setPreviewUrls(newPreviews);
   };
 
+  const makePrimary = (index: number) => {
+    if (index === 0) return;
+    const newImages = [...images];
+    const [img] = newImages.splice(index, 1);
+    newImages.unshift(img);
+    setImages(newImages);
+
+    const newPreviews = [...previewUrls];
+    const [prev] = newPreviews.splice(index, 1);
+    newPreviews.unshift(prev);
+    setPreviewUrls(newPreviews);
+  };
+
   const addSize = () => {
     if (sizeInput.trim()) {
       if (!form.size_options.includes(sizeInput.trim().toUpperCase())) {
