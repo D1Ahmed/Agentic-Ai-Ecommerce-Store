@@ -97,11 +97,35 @@ export default function SellerCollectionPage() {
 
   if (loading || isAuthLoading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-slate-50">
         <Navbar />
-        <div className="flex items-center justify-center h-[80vh]">
-          <Loader2 size={32} className="animate-spin text-blue-600" />
-        </div>
+
+        <section className="pt-24 pb-12 bg-white border-b border-slate-100">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="h-3 w-24 bg-slate-200 rounded animate-pulse mb-6"></div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+              <div>
+                <div className="h-10 w-64 bg-slate-200 rounded animate-pulse mb-2"></div>
+                <div className="h-4 w-96 bg-slate-200 rounded animate-pulse"></div>
+              </div>
+              <div className="h-12 w-40 bg-slate-200 rounded-xl animate-pulse"></div>
+            </div>
+          </div>
+        </section>
+
+        <main className="max-w-6xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                <div className="aspect-[4/5] bg-slate-100 animate-pulse"></div>
+                <div className="p-5">
+                  <div className="h-4 w-3/4 bg-slate-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-4 w-1/4 bg-slate-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -156,7 +180,7 @@ export default function SellerCollectionPage() {
             {products.map((product) => {
               const hasUnread = notifications?.some((n: any) => !n.is_read && n.link === `/seller/products/manage/${product.id}`);
               return (
-              <div key={product.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden group">
+              <div key={product.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden group shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                 <div 
                   className="relative aspect-[4/5] bg-slate-50 overflow-hidden cursor-pointer"
                   onClick={() => router.push(`/seller/products/manage/${product.id}`)}

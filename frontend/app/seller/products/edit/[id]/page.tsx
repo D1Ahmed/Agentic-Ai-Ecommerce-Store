@@ -83,6 +83,15 @@ export default function ProductEditPage() {
     loadData();
   }, [isAuthenticated, isAuthLoading, productId]);
 
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      const data = e.detail;
+      setForm(prev => ({ ...prev, ...data }));
+    };
+    window.addEventListener("UPDATE_PRODUCT_EDIT", handleUpdate);
+    return () => window.removeEventListener("UPDATE_PRODUCT_EDIT", handleUpdate);
+  }, []);
+
   const loadData = async () => {
     try {
       const cols = await fetchMyCollections();
@@ -284,7 +293,7 @@ export default function ProductEditPage() {
           {/* Images Section */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
             <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-              <h2 className="text-sm font-black uppercase tracking-widest">Product Images</h2>
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Product Images</h2>
               <span className="text-xs font-bold text-slate-400">{totalImages}/5 Images</span>
             </div>
             
@@ -337,7 +346,7 @@ export default function ProductEditPage() {
 
           {/* Basic Info */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4">Basic Information</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4 text-slate-900">Basic Information</h2>
             
             <div>
               <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block">Product Name *</label>
@@ -375,7 +384,7 @@ export default function ProductEditPage() {
 
           {/* Pricing */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4">Pricing & Negotiation</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4 text-slate-900">Pricing & Negotiation</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -405,7 +414,7 @@ export default function ProductEditPage() {
 
           {/* Categorization */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4">Categorization</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4 text-slate-900">Categorization</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
@@ -447,7 +456,7 @@ export default function ProductEditPage() {
 
           {/* AI Search Tags */}
           <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4">AI Discoverability</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest border-b border-slate-100 pb-4 text-slate-900">AI Discoverability</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
