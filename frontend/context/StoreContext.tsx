@@ -65,7 +65,19 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     description: string;
     categories: string[];
   } | null>(null);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [pendingProductUpload, setPendingProductUpload] = useState<any>(null);
 
+  // Expose this globally so ChatWindow can inject the File object directly
+  useEffect(() => {
+    (window as any).__setPendingUploadImages = (files: File[]) => {
+      setPendingProductUpload((prev: any) => {
+        return { ...prev, imageFiles: files };
+      });
+    };
+  }, []);
+  
   const [optimisticCollections, setOptimisticCollections] = useState<any[]>([]);
   
   const placingOrderRef = useRef(false);
@@ -180,6 +192,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       setGuestCart([]);
 
       setHasStore(me.has_store || false);
+
+      if (me.has_store) {
+        import("@/lib/api").then(({ fetchMyCollections }) => {
+          fetchMyCollections().then(setCollections).catch(() => {});
+        });
+      }
 
       cartReadyRef.current = true;
     } catch {
@@ -497,6 +515,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const handleAIAction = async (action: string) => {
+    if (!action || action === "NONE") return;
+
+    console.log(`[AI_TRACE] handleAIAction called with action: ${action.substring(0, 100)}${action.length > 100 ? '...' : ''}`);
+
     if (action.startsWith("APPLY_DISCOUNT:")) {
       const discountVal = parseInt(action.replace("APPLY_DISCOUNT:", ""));
       setDiscountPercentage(discountVal);
@@ -660,15 +682,55 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    if (action.startsWith("UPDATE_PRODUCT_EDIT:")) {
+      try {
+        const payload = action.replace("UPDATE_PRODUCT_EDIT:", "");
+        const data = JSON.parse(payload);
+        window.dispatchEvent(new CustomEvent("UPDATE_PRODUCT_EDIT", { detail: data }));
+      } catch (e) {
+        console.error("Failed to parse UPDATE_PRODUCT_EDIT payload", e);
+      }
+      return;
+    }
+
     if (action === "NAVIGATE_SELLER_DASHBOARD") {
       router.push("/seller/dashboard");
       return;
     }
 
+    if (action.startsWith("PREFILL_PRODUCT_UPLOAD:")) {
+      try {
+        const encodedData = action.replace("PREFILL_PRODUCT_UPLOAD:", "");
+        const decodedString = decodeURIComponent(encodedData);
+        const data = JSON.parse(decodedString);
+        setPendingProductUpload((prev: any) => {
+           return { ...prev, ...data };
+        });
+        if (!window.location.pathname.includes("/seller/products/upload")) {
+          router.push("/seller/products/upload");
+        }
+      } catch (e) {
+        console.error("Failed to parse PREFILL_PRODUCT_UPLOAD data", e);
+      }
+      return;
+    }
+
+    if (action.startsWith("NAVIGATE_UPLOAD:")) {
+      const collectionName = action.replace("NAVIGATE_UPLOAD:", "");
+      const collection = [...collections, ...optimisticCollections].find(c => c.name.toLowerCase() === collectionName.toLowerCase());
+      console.log(`[AI_TRACE] NAVIGATE_UPLOAD parsed. collectionName: ${collectionName}, found collection ID: ${collection?.id}`);
+      if (collection) {
+        router.push(`/seller/products/upload?collection_id=${collection.id}`);
+      } else {
+        router.push(`/seller/products/upload`);
+      }
+      return;
+    }
+
     if (action.startsWith("CREATE_COLLECTIONS:")) {
-      const rawNames = action.replace("CREATE_COLLECTIONS:", "");
-      const names = rawNames.split(",").map(n => n.trim()).filter(Boolean);
-      
+      const collectionNamesStr = action.replace("CREATE_COLLECTIONS:", "");
+      const names = collectionNamesStr.split(",").map(n => n.trim()).filter(Boolean);
+      console.log(`[AI_TRACE] CREATE_COLLECTIONS parsed. names:`, names);
       if (names.length > 0) {
         // Optimistic UI Update - inject fake collections instantly
         const fakeCollections = names.map((name, i) => ({
@@ -709,22 +771,28 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    console.log(`[AI_TRACE] Falling back to standard switch cases for action: ${action}`);
     switch (action) {
       case "SORT_PRICE_ASC":
+        console.log(`[AI_TRACE] SORT_PRICE_ASC executed`);
         setProducts([...products].sort((a, b) => a.price - b.price));
         setAiSearchResults([...aiSearchResults].sort((a, b) => a.price - b.price));
         break;
       case "SORT_PRICE_DESC":
+        console.log(`[AI_TRACE] SORT_PRICE_DESC executed`);
         setProducts([...products].sort((a, b) => b.price - a.price));
         setAiSearchResults([...aiSearchResults].sort((a, b) => b.price - a.price));
         break;
       case "TRIGGER_HAGGLE_MODE":
+        console.log(`[AI_TRACE] TRIGGER_HAGGLE_MODE executed`);
         setIsHaggleMode(true);
         break;
       case "NAVIGATE_CART":
+        console.log(`[AI_TRACE] NAVIGATE_CART executed`);
         router.push("/cart");
         break;
       default:
+        console.log(`[AI_TRACE] Unhandled action type: ${action}`);
         break;
     }
   };
@@ -767,6 +835,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         setNotifications,
         optimisticCollections,
         setOptimisticCollections,
+        collections,
+        pendingProductUpload,
+        setPendingProductUpload,
       }}
     >
       {children}

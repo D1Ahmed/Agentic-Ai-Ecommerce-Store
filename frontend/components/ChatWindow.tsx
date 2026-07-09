@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useStore } from "@/context/StoreContext";
-import { Send, X, Bot, Sparkles, ShoppingCart, Eye, Loader2 } from "lucide-react";
+import { Send, X, Bot, Sparkles, ShoppingCart, Eye, Loader2, Paperclip } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,15 +11,68 @@ import { sendChatMessage, type ChatHistoryMessage } from "@/lib/api";
 interface Message {
   role: "user" | "ai";
   text: string;
+  buttons?: { label: string; action: string; msg: string; color?: string }[];
 }
 
 export default function ChatWindow() {
-  const { handleAIAction, user, hasStore, isAuthenticated } = useStore();
+  const { handleAIAction, user, hasStore, isAuthenticated, collections } = useStore();
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedImages, setSelectedImages] = useState<{ file: File; base64: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    
+    if (selectedImages.length + files.length > 5) {
+      alert("You can only upload up to 5 images at a time.");
+      return;
+    }
+
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress to JPEG with 0.7 quality
+          const resizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          setSelectedImages((prev) => [...prev, { file, base64: resizedBase64 }]);
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     const greeting = user
@@ -73,22 +126,70 @@ export default function ChatWindow() {
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    const currentImages = [...selectedImages];
+    if (!input.trim() && currentImages.length === 0 && isLoading) return;
 
-    const userMsg = input.trim();
+    const userMsg = input.trim() || (currentImages.length > 0 ? `Here ${currentImages.length === 1 ? 'is an image' : `are ${currentImages.length} images`}.` : "");
     setInput("");
+    setSelectedImages([]);
     setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
     setIsLoading(true);
 
     try {
       const history = buildHistory();
-      const { text, action } = await sendChatMessage(userMsg, history, user?.name, pathname, hasStore, isAuthenticated);
+      const collNames = collections ? collections.map((c: any) => c.name) : [];
+      const { text, action } = await sendChatMessage(
+        userMsg, 
+        history, 
+        user?.name, 
+        pathname, 
+        hasStore, 
+        isAuthenticated, 
+        collNames,
+        currentImages.length > 0 ? currentImages.map(img => img.base64) : undefined
+      );
 
-      setMessages((prev) => [...prev, { role: "ai", text }]);
+      console.log(`[AI_TRACE] Received response from backend. Action: ${action || "None"}`);
 
-      if (action && action !== "NONE") {
-        // Small delay so the user sees the text response before the page changes
-        setTimeout(() => handleAIAction(action), 400);
+      if (action && action.startsWith("PREFILL_PRODUCT_UPLOAD:")) {
+        // Save the original file so we can inject it into the upload form
+        if (currentImages.length > 0 && (window as any).__setPendingUploadImages) {
+           (window as any).__setPendingUploadImages(currentImages.map(img => img.file));
+        }
+        setMessages((prev) => [...prev, { role: "ai", text }]);
+        setTimeout(() => {
+           console.log(`[AI_TRACE] Executing delayed action: ${action}`);
+           handleAIAction(action);
+        }, 400);
+      } else if (action && action.startsWith("CREATE_AND_ASK_UPLOAD:")) {
+        const collectionName = action.replace("CREATE_AND_ASK_UPLOAD:", "");
+        console.log(`[AI_TRACE] Found CREATE_AND_ASK_UPLOAD. Extracting collectionName: ${collectionName}`);
+        // Tell UI to optimistically create collection
+        setTimeout(() => {
+           console.log(`[AI_TRACE] Executing delayed action: CREATE_COLLECTIONS:${collectionName}`);
+           handleAIAction(`CREATE_COLLECTIONS:${collectionName}`);
+        }, 400);
+
+        setMessages((prev) => [
+          ...prev, 
+          { 
+            role: "ai", 
+            text: text || `Setting up the **${collectionName}** collection for you!`,
+            buttons: [
+              { label: "Yes, Upload Product", action: `NAVIGATE_UPLOAD:${collectionName}`, msg: "Yes, let's upload a product now.", color: "blue" },
+              { label: "No, maybe later", action: "NONE", msg: "No, maybe later." }
+            ]
+          }
+        ]);
+      } else {
+        setMessages((prev) => [...prev, { role: "ai", text }]);
+        if (action && action !== "NONE") {
+          console.log(`[AI_TRACE] Queuing standard action for 400ms: ${action}`);
+          setTimeout(() => {
+            console.log(`[AI_TRACE] Executing delayed action: ${action}`);
+            handleAIAction(action);
+          }, 400);
+        }
       }
     } catch {
       setMessages((prev) => [
@@ -290,6 +391,32 @@ export default function ChatWindow() {
                           <span>Initializing Systems...</span>
                         </div>
                       )}
+                      
+                      {m.buttons && m.buttons.length > 0 && (
+                        <div className="flex flex-col gap-2 mt-3">
+                          {m.buttons.map((btn, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                // Add user message
+                                setMessages(prev => [...prev, { role: "user", text: btn.msg }]);
+                                // Execute action
+                                if (btn.action && btn.action !== "NONE") {
+                                  handleAIAction(btn.action);
+                                }
+                                // Optionally hide buttons after clicking? (We'll leave them for now or let them scroll up)
+                              }}
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                btn.color === "blue" 
+                                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm" 
+                                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200"
+                              }`}
+                            >
+                              {btn.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -318,19 +445,48 @@ export default function ChatWindow() {
           </div>
 
           {/* Input area */}
-          <div className="p-4 bg-white border-t border-slate-100 flex-shrink-0">
+          <div className="p-4 bg-white border-t border-slate-100 flex-shrink-0 relative">
+            {selectedImages.length > 0 && (
+              <div className="absolute bottom-full left-4 mb-2 flex gap-2 overflow-x-auto max-w-[calc(100%-2rem)] pb-2 no-scrollbar">
+                {selectedImages.map((img, idx) => (
+                  <div key={idx} className="group w-12 h-12 flex-shrink-0 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative">
+                    <img src={img.base64} className="w-full h-full object-cover" alt="Selected" />
+                    <button 
+                      onClick={() => setSelectedImages(prev => prev.filter((_, i) => i !== idx))}
+                      className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="relative flex items-center gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+              >
+                <Paperclip size={18} />
+              </button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                accept="image/*" 
+                multiple
+                className="hidden" 
+                onChange={handleImageSelect} 
+              />
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask for outfits, add to cart, checkout..."
                 rows={1}
-                className="flex-1 pl-4 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-600 focus:border-transparent text-[16px] md:text-[14px] text-slate-900 font-medium outline-none transition-all placeholder:text-slate-400 resize-none"
+                className="flex-1 pl-2 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-600 focus:border-transparent text-[16px] md:text-[14px] text-slate-900 font-medium outline-none transition-all placeholder:text-slate-400 resize-none"
               />
               <button
                 onClick={sendMessage}
-                disabled={!input.trim() || isLoading}
+                disabled={(!input.trim() && selectedImages.length === 0) || isLoading}
                 className="p-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-40 disabled:hover:bg-slate-900 flex-shrink-0"
               >
                 <Send size={16} />

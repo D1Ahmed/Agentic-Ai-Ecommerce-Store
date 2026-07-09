@@ -78,11 +78,13 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     """Request body for POST /ai/chat."""
     user_message: str
-    history: Optional[List[ChatMessage]] = []
+    history: Optional[List[ChatMessage]] = None
     user_name: Optional[str] = None
     current_path: Optional[str] = None
     has_store: Optional[bool] = False
     is_authenticated: Optional[bool] = False
+    store_collections: Optional[List[str]] = None
+    image_data: Optional[List[str]] = None
 
 
 class ChatResponse(BaseModel):
