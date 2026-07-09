@@ -118,8 +118,23 @@ export function setStoredCart(items: CartItem[]) {
 // ── Products ──────────────────────────────────────────────────────────────────
 
 export async function fetchProducts(): Promise<Product[]> {
-  const res = await api.get<Product[]>("/products");
-  return res.data;
+  try {
+    const res = await api.get("/products");
+    return res.data;
+  } catch (err) {
+    console.error("Failed to fetch products:", err);
+    return [];
+  }
+}
+
+export async function fetchProductById(id: string | number): Promise<Product | null> {
+  try {
+    const res = await api.get(`/products/${id}`);
+    return res.data;
+  } catch (err) {
+    console.error(`Failed to fetch product ${id}:`, err);
+    return null;
+  }
 }
 
 export async function searchProducts(query: string): Promise<Product[]> {

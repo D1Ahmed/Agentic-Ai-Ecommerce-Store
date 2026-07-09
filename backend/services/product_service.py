@@ -2,13 +2,25 @@ from typing import Any, List, Optional
 from db.client import get_db
 
 
+_products_cache = None
+
 async def get_all_products() -> List:
-    """Return every product in the database."""
+    """Return every product in the database, cached in memory for speed."""
+    global _products_cache
+    if _products_cache is not None:
+        return _products_cache
+        
     async with get_db() as db:
-        return await db.product.find_many(
+        products = await db.product.find_many(
             include={"images": True, "store": True},
             order={"created_at": "desc"},
         )
+        _products_cache = products
+        return products
+
+def clear_products_cache():
+    global _products_cache
+    _products_cache = None
 
 
 async def get_product_by_id(product_id: int) -> Any | None:
@@ -75,4 +87,6 @@ async def search_products(query: str) -> List:
 async def delete_product(product_id: int):
     """Delete a product by ID."""
     async with get_db() as db:
-        return await db.product.delete(where={"id": product_id})
+        res = await db.product.delete(where={"id": product_id})
+        clear_products_cache()
+        return res

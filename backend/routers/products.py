@@ -13,6 +13,16 @@ async def remove_product(product_id: int, user = Depends(get_current_user)):
     return {"status": "ok"}
 
 
+@router.get("/{product_id}")
+async def get_product(product_id: int):
+    """Get a single product by ID."""
+    from services.product_service import get_product_by_id
+    product = await get_product_by_id(product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+
 @router.get("")
 async def list_products():
     """Return the full product catalogue."""
