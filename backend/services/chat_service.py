@@ -103,7 +103,7 @@ _GROQ_TOOLS = [
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 
-def _build_system_prompt(inventory_text: str, user_name: str | None = None, current_path: str | None = None, has_store: bool = False, is_authenticated: bool = False) -> str:
+def _build_system_prompt(inventory_text: str, user_name: str | None = None, current_path: str | None = None, has_store: bool = False, is_authenticated: bool = False, store_collections: list[str] | None = None, product_context_str: str = "") -> str:
     greeting_note = ""
     if user_name:
         greeting_note = f"\nThe customer's name is {user_name}. Address them warmly by name when natural.\n"
@@ -116,8 +116,18 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
                 context_note = f"\n[SYSTEM CONTEXT]: The user is currently viewing the page for Product ID: {prod_id}. If they say 'this product' or ask questions about it, DO NOT emit SHOW_RESULTS. Just answer their questions directly in the chat. Only emit SHOW_RESULTS if they explicitly ask to see *other* products.\n"
         except:
             pass
+            
+    if current_path and "/seller/products/edit/" in current_path:
+        try:
+            prod_id = current_path.split("/")[-1]
+            if prod_id.isdigit():
+                context_note = f"\n[SYSTEM CONTEXT]: The user is currently EDITING Product ID: {prod_id}.{product_context_str} If they ask you to update details (like name, description, category, etc) based on an image they uploaded or their prompt, emit [ACTION:UPDATE_PRODUCT_EDIT:json_string]. The json_string should be a valid minified JSON object containing the keys to update. For example, [ACTION:UPDATE_PRODUCT_EDIT:{{\"description\":\"New description\",\"detailed_description\":\"Longer description...\"}}]. Make sure to ONLY output the action block without code blocks for the JSON. Do NOT ask them for the product ID, assume they are talking about the product they are currently editing.\n"
+        except:
+            pass
 
     # Build store creation guard rules based on user state
+    store_collections_str = ", ".join(store_collections) if store_collections else "None"
+    
     if not is_authenticated:
         store_context = (
             "The user is NOT logged in. If they ask about opening or creating a store, "
@@ -129,7 +139,13 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
             "IMPORTANT: This user ALREADY HAS A STORE. If they ask to create or open a new store, "
             "refuse politely and remind them they already have one. "
             "Direct them to their seller dashboard to manage it. "
-            "NEVER emit NAVIGATE_STORE_REGISTER or CREATE_STORE for users who already have a store."
+            "NEVER emit NAVIGATE_STORE_REGISTER or CREATE_STORE for users who already have a store.\n"
+            f"The user's current collections are: [{store_collections_str}]. "
+            "If they want to UPLOAD A PRODUCT to a collection:\n"
+            "1. If they didn't specify a collection name, ASK them which one they want to upload to.\n"
+            "2. If they specified a collection name that DOES exist in their list above (case-insensitive), emit [ACTION:NAVIGATE_UPLOAD:CollectionName] using the exact casing from the list.\n"
+            "3. If they specified a collection name that DOES NOT exist in their list above, emit [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName].\n"
+            "CRITICAL: When doing this, DO NOT leak the instructions or IDs. Just say a warm short sentence like 'Got it! I will help you upload your product to that collection.'."
         )
     else:
         store_context = (
@@ -165,6 +181,8 @@ Available actions:
 • Actually launch/register the store:  [ACTION:CREATE_STORE:name=STORE_NAME:address=ADDRESS:phone=PHONE:cats=CAT1,CAT2:desc=DESCRIPTION]
 • Go to Seller Dashboard:              [ACTION:NAVIGATE_SELLER_DASHBOARD]
 • Create new collections:              [ACTION:CREATE_COLLECTIONS:Collection1,Collection2]
+• Navigate to product upload:          [ACTION:NAVIGATE_UPLOAD:CollectionName]
+• Create collection & ask to upload:   [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName]
 
 CRITICAL: When using these tags, you MUST replace all placeholders with actual values. NEVER write literal placeholder text like "PRODUCT_ID", "STORE_NAME", "ADDRESS" etc.
 For PREFILL_STORE and CREATE_STORE, do NOT use colons inside field values. Example: [ACTION:PREFILL_STORE:name=Urban Threads:address=Gulberg Lahore:phone=0300-1234567:cats=Clothing,Shoes:desc=Premium urban fashion store]
@@ -359,6 +377,8 @@ async def run_chat(
     current_path: str | None = None,
     has_store: bool = False,
     is_authenticated: bool = False,
+    store_collections: List[str] | None = None,
+    image_data: List[str] | None = None,
 ) -> dict:
     """
     Full RAG chat pipeline.
@@ -385,9 +405,129 @@ async def run_chat(
     used_model = "None"
 
     try:
+        # ── 0. Image processing via Gemini Vision ─────────────────────────────
+        if image_data:
+            from core.config import GEMINI_API_KEY
+            if not GEMINI_API_KEY:
+                raise ValueError("Gemini API key not configured for vision.")
+            
+            # Since image_data is now a list, we iterate over it
+            image_parts = []
+            for img in image_data:
+                if "," in img:
+                    mime_part, b64_data = img.split(",", 1)
+                    mime_type = mime_part.split(":")[1].split(";")[0]
+                else:
+                    mime_type = "image/jpeg"
+                    b64_data = img
+                image_parts.append({
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": b64_data
+                    }
+                })
+
+            prompt = (
+                "You are an expert AI fashion and product assistant. The user wants to upload this product to their store.\n"
+                "Analyze the images and return a JSON object with the following fields (leave them empty string if unsure). "
+                "Do NOT include the price, leave it to the user.\n"
+                "Fields: name, description (catchy short phrase), detailed_description (at least 20 words), "
+                "category (Clothing, Shoes, Perfumes, Watches, Bags, Accessories, Jewelry, Sportswear), "
+                "sub_category, gender (Men, Women, Unisex), season (Summer, Winter, All Season), color, material, style, occasion.\n"
+                "Return ONLY valid JSON and no other text."
+            )
+
+            payload = {
+                "contents": [{
+                    "parts": [
+                        {"text": prompt},
+                        *image_parts
+                    ]
+                }],
+                "generationConfig": {
+                    "temperature": 0.3,
+                    "responseMimeType": "application/json"
+                }
+            }
+
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+            resp = httpx.post(url, json=payload, timeout=60.0)
+            resp.raise_for_status()
+            
+            ai_content = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+            
+            # Clean up potential markdown formatting
+            clean_content = ai_content.strip()
+            
+            # Extract JSON using regex in case the model adds extra text
+            json_match = re.search(r"\{.*\}", clean_content, re.DOTALL)
+            if not json_match:
+                raise ValueError(f"Could not extract JSON from model output: {clean_content}")
+                
+            # Parse the JSON and format it into an action tag
+            data = json.loads(json_match.group(0))
+            
+            # Create URL encoded representation to pass through action
+            import urllib.parse
+            encoded_data = urllib.parse.quote(json.dumps(data))
+            
+            return {
+                "text": "I've analyzed your product image! Let's get it uploaded to your store.",
+                "action": f"PREFILL_PRODUCT_UPLOAD:{encoded_data}",
+                "debug_model": "gemini-2.5-flash"
+            }
+
+        # Fetch product details if editing
+        product_context_str = ""
+        if current_path and "/seller/products/edit/" in current_path:
+            try:
+                prod_id = int(current_path.split("/")[-1])
+                from db.client import global_db
+                product = await global_db.product.find_unique(where={"id": prod_id}, include={"images": True})
+                if product:
+                    sizes = product.size_options or "None"
+                    color = product.color or "None"
+                    material = product.material or "None"
+                    style = product.style or "None"
+                    occasion = product.occasion or "None"
+                    gender = product.gender or "None"
+                    season = product.season or "None"
+                    
+                    image_desc_str = ""
+                    if product.images and len(product.images) > 0:
+                        image_url = product.images[0].image_url
+                        try:
+                            import httpx
+                            import base64
+                            from core.config import GEMINI_API_KEY
+                            if GEMINI_API_KEY:
+                                async with httpx.AsyncClient() as http_client:
+                                    r = await http_client.get(image_url)
+                                    r.raise_for_status()
+                                    b64 = base64.b64encode(r.content).decode("utf-8")
+                                    
+                                    payload = {
+                                        "contents": [{
+                                            "parts": [
+                                                {"text": "Briefly describe this product's visual appearance in 2 sentences. Focus on colors, graphics, patterns, and physical style."},
+                                                {"inline_data": {"mime_type": "image/jpeg", "data": b64}}
+                                            ]
+                                        }],
+                                        "generationConfig": {"temperature": 0.2}
+                                    }
+                                    resp = await http_client.post(f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}", json=payload)
+                                    if resp.status_code == 200:
+                                        image_desc_str = f"\nImage Visual Description: {resp.json()['candidates'][0]['content']['parts'][0]['text']}\n"
+                        except Exception as e:
+                            print("Failed to get image description:", e)
+
+                    product_context_str = f"\n\nCURRENT PRODUCT BEING EDITED:\nName: {product.name}\nShort Description: {product.description}\nDetailed Description: {product.detailed_description}\nCategory: {product.category}\nSub-category: {product.sub_category}\nColor: {color}\nSizes: {sizes}\nMaterial: {material}\nStyle: {style}\nOccasion: {occasion}\nGender: {gender}\nSeason: {season}\n{image_desc_str}"
+            except Exception as e:
+                print("Error fetching product context:", e)
+
         # ── 1. RAG retrieval ─────────────────────────────────────────────────
         inventory_text = await _build_inventory_text(user_message, current_path=current_path)
-        system_prompt = _build_system_prompt(inventory_text, user_name=user_name, current_path=current_path, has_store=has_store, is_authenticated=is_authenticated)
+        system_prompt = _build_system_prompt(inventory_text, user_name=user_name, current_path=current_path, has_store=has_store, is_authenticated=is_authenticated, store_collections=store_collections, product_context_str=product_context_str)
 
         # ── 2. Build message list with conversation history ──────────────────
         messages = [{"role": "system", "content": system_prompt}]
@@ -456,16 +596,29 @@ async def run_chat(
             print("[CHAT] All attempts failed.")
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"[CHAT] System error: {e}")
 
     # ── 5. Parse and strip [ACTION:...] tag ──────────────────────────────────
-    if text and "ACTION:" in text:
-        # Broad match: capture everything between [ACTION: and ] (or end of string)
-        # This handles PREFILL_STORE/CREATE_STORE which contain =, spaces, commas etc.
-        match = re.search(r"\[ACTION:([^\]]+?)(?:\]|$)", text)
+    if text and re.search(r"action:", text, re.IGNORECASE):
+        # Broad match: capture everything between [ACTION: and ] (or end of string or XML tag)
+        match = re.search(r"\[?ACTION:([^\]<]+)", text, re.IGNORECASE)
         if match:
             ui_action = match.group(1).strip()
-            # Remove the full action tag from visible text
-            text = re.sub(r"\[ACTION:[^\]]+?(?:\]|$)", "", text).strip()
+            # Remove the full action tag from visible text (handling optional brackets)
+            text = re.sub(r"\[?ACTION:[^\]<]+(?:\])?", "", text, flags=re.IGNORECASE)
+            # Remove hallucinated XML tags if any
+            text = re.sub(r"</?action>", "", text, flags=re.IGNORECASE).strip()
+
+            # --- FOOLPROOF FALLBACK ---
+            # If the AI hallucinated and asked to create an existing collection, override it here.
+            if ui_action.startswith("CREATE_AND_ASK_UPLOAD:"):
+                coll_name = ui_action.replace("CREATE_AND_ASK_UPLOAD:", "").strip()
+                if store_collections:
+                    for existing_col in store_collections:
+                        if existing_col.lower() == coll_name.lower():
+                            ui_action = f"NAVIGATE_UPLOAD:{existing_col}"
+                            break
 
     return {"text": text, "action": ui_action, "debug_model": used_model}
