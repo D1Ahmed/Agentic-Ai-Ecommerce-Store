@@ -142,11 +142,56 @@ export default function SellerDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-slate-50">
         <Navbar />
-        <div className="flex items-center justify-center h-[80vh]">
-          <Loader2 size={32} className="animate-spin text-blue-600" />
-        </div>
+        
+        {/* Skeleton Dashboard Header */}
+        <section className="pt-24 pb-8 bg-gradient-to-br from-slate-900 via-blue-900/90 to-slate-900">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 bg-white/10 rounded-xl animate-pulse"></div>
+                <div>
+                  <div className="h-8 w-48 bg-white/10 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 w-32 bg-white/10 rounded animate-pulse"></div>
+                </div>
+              </div>
+              <div className="h-8 w-32 bg-white/10 rounded-xl animate-pulse"></div>
+            </div>
+
+            {/* Skeleton Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                  <div className="h-5 w-5 bg-white/10 rounded animate-pulse mb-2"></div>
+                  <div className="h-8 w-16 bg-white/10 rounded animate-pulse mb-1"></div>
+                  <div className="h-2 w-20 bg-white/10 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Skeleton Collections Grid */}
+        <main className="max-w-6xl mx-auto px-6 py-12">
+          <div className="flex justify-between items-center mb-8">
+            <div className="border-l-4 border-slate-200 pl-4">
+              <div className="h-6 w-48 bg-slate-200 rounded animate-pulse mb-2"></div>
+              <div className="h-3 w-32 bg-slate-200 rounded animate-pulse"></div>
+            </div>
+            <div className="h-10 w-40 bg-slate-200 rounded-xl animate-pulse"></div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-100 p-6">
+                <div className="w-14 h-14 bg-slate-100 rounded-2xl animate-pulse mb-4"></div>
+                <div className="h-5 w-32 bg-slate-100 rounded animate-pulse mb-2"></div>
+                <div className="h-3 w-48 bg-slate-100 rounded animate-pulse mt-4"></div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }

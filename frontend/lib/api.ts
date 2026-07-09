@@ -23,6 +23,7 @@ const STORED_CART_KEY = "hdwear_server_cart";
 export const api = axios.create({ baseURL: API_BASE_URL });
 
 api.interceptors.request.use((config) => {
+  (config as any).metadata = { startTime: new Date() };
   if (typeof window !== "undefined") {
     const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
@@ -31,6 +32,25 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => {
+    const start = (response.config as any).metadata?.startTime;
+    if (start) {
+      const duration = new Date().getTime() - start.getTime();
+      console.log(`[API_TIMER] ${response.config.method?.toUpperCase()} ${response.config.url} took ${duration}ms`);
+    }
+    return response;
+  },
+  (error) => {
+    const start = (error.config as any)?.metadata?.startTime;
+    if (start) {
+      const duration = new Date().getTime() - start.getTime();
+      console.log(`[API_TIMER] FAILED ${error.config?.method?.toUpperCase()} ${error.config?.url} took ${duration}ms`);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -199,7 +219,9 @@ export async function sendChatMessage(
   userName?: string | null,
   currentPath?: string | null,
   hasStore?: boolean,
-  isAuthenticated?: boolean
+  isAuthenticated?: boolean,
+  storeCollections?: string[],
+  imageData?: string[]
 ): Promise<ChatResponse> {
   const res = await api.post<ChatResponse>("/ai/chat", {
     user_message: message,
@@ -208,6 +230,8 @@ export async function sendChatMessage(
     current_path: currentPath || null,
     has_store: hasStore || false,
     is_authenticated: isAuthenticated || false,
+    store_collections: storeCollections || [],
+    image_data: imageData || null,
   });
   return res.data;
 }
