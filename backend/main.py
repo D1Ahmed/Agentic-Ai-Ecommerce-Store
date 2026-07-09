@@ -8,13 +8,22 @@ from routers import products, orders, chat, auth, cart, store, seller, reviews, 
 import asyncio
 
 # ── Lifespan — build RAG index at startup ─────────────────────────────────────
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load catalogue immediately; build semantic index in the background."""
+    from db.client import global_db
+    await global_db.connect()
+    
     from services.rag_service import init_catalog, build_index
     await init_catalog()
     asyncio.create_task(build_index())
+    
     yield
+    
+    if global_db.is_connected():
+        await global_db.disconnect()
 
 
 # ── App ───────────────────────────────────────────────────────────────────────
