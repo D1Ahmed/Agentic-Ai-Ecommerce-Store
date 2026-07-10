@@ -206,8 +206,22 @@ export default function ChatWindow() {
             ]
           }
         ]);
+      } else if (action === "ASK_CREATE_STORE") {
+        setMessages((prev) => [
+          ...prev, 
+          { 
+            role: "ai", 
+            text: text || "You need a store first to upload products! Would you like me to help you create one right now?",
+            buttons: [
+              { label: "Yes, create my store", action: "NONE", msg: "Yes, please help me create my store.", color: "blue" },
+              { label: "No, maybe later", action: "NONE", msg: "No, maybe later." }
+            ]
+          }
+        ]);
       } else {
-        setMessages((prev) => [...prev, { role: "ai", text }]);
+        if (text) {
+          setMessages((prev) => [...prev, { role: "ai", text }]);
+        }
         if (action && action !== "NONE") {
           console.log(`[AI_TRACE] Queuing standard action for 400ms: ${action}`);
           setTimeout(() => {

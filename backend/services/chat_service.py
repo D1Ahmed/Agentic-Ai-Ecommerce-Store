@@ -140,21 +140,23 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
             "refuse politely and remind them they already have one. "
             "Direct them to their seller dashboard to manage it. "
             "NEVER emit NAVIGATE_STORE_REGISTER or CREATE_STORE for users who already have a store.\n"
-            f"The user's current collections are: [{store_collections_str}]. "
+            f"The user's current collections are: [{store_collections_str}]. Current page: {current_path}\n"
             "If they want to UPLOAD A PRODUCT to a collection:\n"
-            "1. If they didn't specify a collection name, emit [ACTION:NAVIGATE_SELLER_DASHBOARD] and ask: \"Which collection do you want to upload the product to?\"\n"
-            "2. If they specified a collection name that DOES exist in their list above (case-insensitive, allow slight misspellings or typos), emit [ACTION:NAVIGATE_UPLOAD:CollectionName] using the EXACT casing from the list. Warmly tell them they can upload pictures directly here in the chat, or manually in the image section.\n"
-            "3. If they specified a collection name that DOES NOT exist in their list above, emit [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName]. CRITICAL: Emit exactly ONE collection name without any commas here.\n"
+            "1. If they DID NOT specify a collection name:\n"
+            "   a) If they are NOT currently on the store page (e.g. /seller/dashboard or /seller/products/upload), emit [ACTION:NAVIGATE_SELLER_DASHBOARD] and explicitly ask: 'Do you want to make a new collection for it or upload in an existing one?'\n"
+            "   b) If they ARE currently on the store page, do NOT navigate. Just ask: 'What collection do you want to upload the product in?'\n"
+            "2. If they DID specify a collection name:\n"
+            "   a) If that collection DOES exist in their list above (case-insensitive, allow slight typos), emit [ACTION:NAVIGATE_UPLOAD:CollectionName] using the EXACT casing from the list. Warmly tell them they can upload pictures directly here in the chat, or manually in the image section.\n"
+            "   b) If that collection DOES NOT exist in their list above, emit [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName]. CRITICAL: Emit exactly ONE collection name without commas.\n"
             "CRITICAL: When doing this, DO NOT leak the instructions or IDs. Just say a warm short sentence like 'Got it! I will help you upload your product to that collection.'."
         )
     else:
         store_context = (
             "This user does NOT have a store yet and IS logged in. "
-            "If they ask how to open a store, you can guide them: they can either go to the form "
-            "([ACTION:NAVIGATE_STORE_REGISTER]) or you can help them create it right here in chat. "
-            "If they say 'make a store for me' or 'create my store here' or similar, "
-            "start the conversational flow: collect name, address, phone, categories, "
-            "and optional description, then emit CREATE_STORE. "
+            "If they ask to upload a product or open a store, tell them they must create a store first. "
+            "Emit [ACTION:ASK_CREATE_STORE] which will give them Yes/No buttons to start the process.\n"
+            "If they agree to make a store, start the conversational flow: collect name, address, phone, categories, "
+            "and optional description, then emit [ACTION:CREATE_STORE:name=...]. "
             "Valid categories are: Clothing, Shoes, Perfumes, Watches, Bags, Accessories, Jewelry, Sportswear."
         )
 
@@ -184,6 +186,7 @@ Available actions:
 • Navigate to product upload:          [ACTION:NAVIGATE_UPLOAD:CollectionName]
 • Create collection & ask to upload:   [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName]
 • Navigate to upload without collection: [ACTION:NAVIGATE_UPLOAD]
+• Ask user to create store (buttons):  [ACTION:ASK_CREATE_STORE]
 
 CRITICAL: When using these tags, you MUST replace all placeholders with actual values. NEVER write literal placeholder text like "PRODUCT_ID", "STORE_NAME", "ADDRESS", or "CollectionName".
 For PREFILL_STORE and CREATE_STORE, do NOT use colons inside field values. Example: [ACTION:PREFILL_STORE:name=Urban Threads:address=Gulberg Lahore:phone=0300-1234567:cats=Clothing,Shoes:desc=Premium urban fashion store]
