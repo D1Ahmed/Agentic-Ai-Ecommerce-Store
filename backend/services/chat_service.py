@@ -143,10 +143,10 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
             f"The user's current collections are: [{store_collections_str}]. Current page: {current_path}\n"
             "If they want to UPLOAD A PRODUCT to a collection:\n"
             "1. If they DID NOT specify a collection name:\n"
-            "   a) If they are NOT currently on the store page (e.g. /seller/dashboard or /seller/products/upload), emit [ACTION:NAVIGATE_SELLER_DASHBOARD] and explicitly ask: 'Do you want to make a new collection for it or upload in an existing one?'\n"
-            "   b) If they ARE currently on the store page, do NOT navigate. Just ask: 'What collection do you want to upload the product in?'\n"
+            "   a) If they are NOT currently on the store page (e.g. /seller/dashboard or /seller/products/upload), emit the exact tag [ACTION:NAVIGATE_SELLER_DASHBOARD]. Outside the tag, explicitly ask: 'Do you want to make a new collection for it or upload in an existing one?'\n"
+            "   b) If they ARE currently on the store page, do NOT emit a navigation tag. Just ask: 'What collection do you want to upload the product in?'\n"
             "2. If they DID specify a collection name:\n"
-            "   a) If that collection DOES exist in their list above (case-insensitive, allow slight typos), emit [ACTION:NAVIGATE_UPLOAD:CollectionName] using the EXACT casing from the list. Warmly tell them they can upload pictures directly here in the chat, or manually in the image section.\n"
+            "   a) If that collection DOES exist in their list above (case-insensitive, allow slight typos), emit the tag [ACTION:NAVIGATE_UPLOAD:CollectionName] using the EXACT casing from the list. Outside the tag, warmly tell them they can upload pictures directly here in the chat, or manually in the image section.\n"
             "   b) If that collection DOES NOT exist in their list above, emit [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName]. CRITICAL: Emit exactly ONE collection name without commas.\n"
             "CRITICAL: When doing this, DO NOT leak the instructions or IDs. Just say a warm short sentence like 'Got it! I will help you upload your product to that collection.'."
         )
