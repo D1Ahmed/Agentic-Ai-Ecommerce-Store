@@ -37,7 +37,9 @@ function UploadContent() {
     pendingProductUpload, 
     setPendingProductUpload,
     collections: storeCollections,
-    optimisticCollections 
+    optimisticCollections,
+    setIsChatOpen,
+    setPendingImageAnalysis
   } = useStore();
   
   const router = useRouter();
@@ -148,6 +150,12 @@ function UploadContent() {
     const newPreviews = files.map(f => URL.createObjectURL(f));
     setPreviewUrls(prev => [...prev, ...newPreviews]);
     setError("");
+
+    // Trigger AI analysis if chat was closed
+    if (files.length > 0) {
+      setPendingImageAnalysis(files);
+      setIsChatOpen(true);
+    }
   };
 
   const removeImage = (index: number) => {

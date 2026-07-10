@@ -73,6 +73,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [cartOpen, setCartOpen] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [pendingProductUpload, setPendingProductUpload] = useState<any>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [pendingImageAnalysis, setPendingImageAnalysis] = useState<File[] | null>(null);
 
   // Expose this globally so ChatWindow can inject the File object directly
   useEffect(() => {
@@ -857,6 +859,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         collections,
         pendingProductUpload,
         setPendingProductUpload,
+        isChatOpen,
+        setIsChatOpen,
+        pendingImageAnalysis,
+        setPendingImageAnalysis,
       }}
     >
       {children}
