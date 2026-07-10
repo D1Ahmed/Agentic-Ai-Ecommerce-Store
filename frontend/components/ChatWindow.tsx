@@ -101,6 +101,8 @@ export default function ChatWindow() {
           "\nWhat are you looking for today?",
       },
     ]);
+  }, [user?.id, user?.name]);
+
   // Process manual image analysis requests from upload pages
   useEffect(() => {
     if (pendingImageAnalysis && pendingImageAnalysis.length > 0) {
