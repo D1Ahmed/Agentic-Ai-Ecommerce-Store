@@ -547,20 +547,24 @@ export default function ChatWindow() {
               </div>
             )}
             <div className="relative flex items-center gap-2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
-              >
-                <Paperclip size={18} />
-              </button>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                accept="image/*" 
-                multiple
-                className="hidden" 
-                onChange={handleImageSelect} 
-              />
+              {(pathname.includes('/seller/products/upload') || pathname.includes('/seller/products/edit')) && (
+                <>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                  >
+                    <Paperclip size={18} />
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    accept="image/*" 
+                    multiple
+                    className="hidden" 
+                    onChange={handleImageSelect} 
+                  />
+                </>
+              )}
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
