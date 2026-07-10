@@ -168,6 +168,7 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
 ━━━ CRITICAL ACTION RULES ━━━
 You MUST embed EXACTLY ONE action tag per response when performing an operation.
 Format: [ACTION:TYPE:PARAMS]  ← square brackets, uppercase, colons as separators.
+CRITICAL: You MUST ALWAYS write a friendly, conversational response OUTSIDE of the action tag for EVERY message you send. Never send just an action tag without any text!
 
 Available actions:
 • Show filtered products to user:      [ACTION:SHOW_RESULTS:ID1,ID2,ID3,...]
@@ -454,7 +455,7 @@ async def run_chat(
                 }
             }
 
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
             resp = httpx.post(url, json=payload, timeout=60.0)
             resp.raise_for_status()
             
@@ -478,7 +479,7 @@ async def run_chat(
             return {
                 "text": "I've analyzed your product image! Let's get it uploaded to your store.",
                 "action": f"PREFILL_PRODUCT_UPLOAD:{encoded_data}",
-                "debug_model": "gemini-2.5-flash"
+                "debug_model": "gemini-1.5-flash"
             }
 
         # Fetch product details if editing
@@ -519,7 +520,8 @@ async def run_chat(
                                         }],
                                         "generationConfig": {"temperature": 0.2}
                                     }
-                                    resp = await http_client.post(f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}", json=payload)
+                                    import json
+                                    resp = await http_client.post(f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}", json=payload)
                                     if resp.status_code == 200:
                                         image_desc_str = f"\nImage Visual Description: {resp.json()['candidates'][0]['content']['parts'][0]['text']}\n"
                         except Exception as e:
