@@ -251,6 +251,19 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [isAuthenticated]);
 
+  // Global event listener for refreshing store data
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (hasStore) {
+        import("@/lib/api").then(({ fetchMyCollections }) => {
+          fetchMyCollections().then(setCollections).catch(() => {});
+        });
+      }
+    };
+    window.addEventListener("refresh_dashboard", handleRefresh);
+    return () => window.removeEventListener("refresh_dashboard", handleRefresh);
+  }, [hasStore]);
+
   const getItemKey = (item: CartItem) => `${item.id}-${item.selected_size || ''}-${item.selected_color || ''}`;
 
   const mergeCarts = (local: CartItem[], server: CartItem[]): CartItem[] => {
@@ -777,6 +790,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         createCollection({ name })
           .then(() => {
             // Once real API succeeds, trigger a refresh to fetch real IDs
+            setOptimisticCollections([]);
             window.dispatchEvent(new Event("refresh_dashboard"));
           })
           .catch((err: any) => {
@@ -821,6 +835,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         Promise.all(names.map(name => createCollection({ name })))
           .then(() => {
             // Once real API succeeds, trigger a refresh to fetch real IDs
+            setOptimisticCollections([]);
             window.dispatchEvent(new Event("refresh_dashboard"));
           })
           .catch((err: any) => {
