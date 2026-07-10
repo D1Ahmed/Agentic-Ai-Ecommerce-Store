@@ -11,16 +11,21 @@ export default function AiCollectionsPage() {
 
   if (!aiSearchResults || aiSearchResults.length === 0) {
     return (
-      <div className="h-screen bg-white flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-slate-400 font-black uppercase tracking-widest text-xs">
-          The Clerk is preparing your tailored archive...
+      <div className="h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6 text-blue-600">
+          <Bot size={32} />
+        </div>
+        <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 mb-2">
+          No Products Found
+        </h2>
+        <p className="text-slate-500 font-medium mb-8 max-w-md text-center">
+          The Clerk couldn't find any specific items matching those exact criteria in the current inventory.
         </p>
         <Link
           href="/"
-          className="mt-8 text-[10px] uppercase font-black tracking-widest text-slate-400 flex items-center gap-2 hover:text-slate-900"
+          className="bg-slate-900 text-white px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-colors"
         >
-          <ArrowLeft size={14} /> Return to Main Vault
+          Return to Main Vault
         </Link>
       </div>
     );
