@@ -30,6 +30,8 @@ import {
   setStoredUser,
   getStoredCart,
   setStoredCart,
+  getStoredProducts,
+  setStoredProducts,
   fetchNotifications,
   registerStore,
   createCollection,
@@ -44,8 +46,11 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   // This means the UI shows the correct auth state INSTANTLY with zero flash.
   const cachedUser = getStoredUser();
   const cachedCart = cachedUser ? getStoredCart() : getGuestCart();
+  const cachedProducts = getStoredProducts();
 
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(cachedProducts);
+  const [isProductsLoading, setIsProductsLoading] = useState(cachedProducts.length === 0);
+  const [productsLoadTime, setProductsLoadTime] = useState<number | null>(null);
   const [cart, setCartState] = useState<CartItem[]>(cachedCart);
   const [user, setUser] = useState<User | null>(cachedUser);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -153,11 +158,21 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   }, [cart, user, scheduleCartSync]);
 
   const loadProducts = async () => {
+    // Only show loading state if we don't have cached products
+    if (products.length === 0) {
+      setIsProductsLoading(true);
+    }
+    const startTime = performance.now();
     try {
       const data = await fetchProducts();
       setProducts(data);
+      setStoredProducts(data);
     } catch (err) {
       console.error("Failed to fetch products", err);
+    } finally {
+      const endTime = performance.now();
+      setProductsLoadTime(endTime - startTime);
+      setIsProductsLoading(false);
     }
   };
 
@@ -802,6 +817,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         products,
         setProducts,
+        isProductsLoading,
+        productsLoadTime,
         cart,
         setCart,
         user,

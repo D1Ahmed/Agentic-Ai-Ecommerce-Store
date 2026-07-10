@@ -7,10 +7,12 @@ import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
 
 export default function Home() {
-  const { products } = useStore();
+  const { products, isProductsLoading, productsLoadTime } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
@@ -53,20 +55,42 @@ export default function Home() {
 
       {/* Collections Section */}
       <section id="collections" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="mb-12 border-l-4 border-blue-600 pl-6">
-          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-slate-900">
-            All <span className="text-blue-600">Collections.</span>
-          </h2>
-          <p className="text-slate-500 font-medium mt-2">
-            Explore our complete archive of premium apparel.
-          </p>
+        <div className="mb-12 border-l-4 border-blue-600 pl-6 flex justify-between items-end">
+          <div>
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-slate-900">
+              All <span className="text-blue-600">Collections.</span>
+            </h2>
+            <p className="text-slate-500 font-medium mt-2">
+              Explore our complete archive of premium apparel.
+            </p>
+          </div>
+          {productsLoadTime !== null && (
+            <div className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400"></span>
+              Loaded in {productsLoadTime.toFixed(0)}ms
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
-          {products.map((product: any) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {!isMounted || isProductsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex flex-col gap-4">
+                <div className="aspect-[4/5] bg-slate-200 rounded-3xl animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-5 bg-slate-200 rounded animate-pulse w-3/4"></div>
+                  <div className="h-4 bg-slate-200 rounded animate-pulse w-1/4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
+            {products.map((product: any) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* FOOTER */}

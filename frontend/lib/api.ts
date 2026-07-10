@@ -19,6 +19,7 @@ const TOKEN_KEY = "hdwear_token";
 const GUEST_CART_KEY = "hdwear_guest_cart";
 const STORED_USER_KEY = "hdwear_user";
 const STORED_CART_KEY = "hdwear_server_cart";
+const STORED_PRODUCTS_KEY = "hdwear_products";
 
 export const api = axios.create({ baseURL: API_BASE_URL });
 
@@ -113,6 +114,24 @@ export function setStoredCart(items: CartItem[]) {
   if (typeof window === "undefined") return;
   if (items.length === 0) localStorage.removeItem(STORED_CART_KEY);
   else localStorage.setItem(STORED_CART_KEY, JSON.stringify(items));
+}
+
+// ── Optimistic cached products (avoids skeleton flash on load) ────────────────
+
+export function getStoredProducts(): Product[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORED_PRODUCTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setStoredProducts(products: Product[]) {
+  if (typeof window === "undefined") return;
+  if (products.length === 0) localStorage.removeItem(STORED_PRODUCTS_KEY);
+  else localStorage.setItem(STORED_PRODUCTS_KEY, JSON.stringify(products));
 }
 
 // ── Products ──────────────────────────────────────────────────────────────────
