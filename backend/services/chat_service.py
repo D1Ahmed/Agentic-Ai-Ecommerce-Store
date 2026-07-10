@@ -14,6 +14,8 @@ Pipeline per request:
 import re
 import json
 import httpx
+import base64
+import urllib.parse
 from typing import List
 from groq import Groq
 
@@ -473,7 +475,6 @@ async def run_chat(
             data = json.loads(json_match.group(0))
             
             # Create URL encoded representation to pass through action
-            import urllib.parse
             encoded_data = urllib.parse.quote(json.dumps(data))
             
             return {
@@ -502,7 +503,6 @@ async def run_chat(
                     if product.images and len(product.images) > 0:
                         image_url = product.images[0].image_url
                         try:
-                            import base64
                             from core.config import GEMINI_API_KEY
                             if GEMINI_API_KEY:
                                 async with httpx.AsyncClient() as http_client:
@@ -519,7 +519,6 @@ async def run_chat(
                                         }],
                                         "generationConfig": {"temperature": 0.2}
                                     }
-                                    import json
                                     resp = await http_client.post(f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}", json=payload)
                                     if resp.status_code == 200:
                                         image_desc_str = f"\nImage Visual Description: {resp.json()['candidates'][0]['content']['parts'][0]['text']}\n"
