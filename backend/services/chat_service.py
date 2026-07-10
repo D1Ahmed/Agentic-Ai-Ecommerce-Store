@@ -502,7 +502,6 @@ async def run_chat(
                     if product.images and len(product.images) > 0:
                         image_url = product.images[0].image_url
                         try:
-                            import httpx
                             import base64
                             from core.config import GEMINI_API_KEY
                             if GEMINI_API_KEY:
