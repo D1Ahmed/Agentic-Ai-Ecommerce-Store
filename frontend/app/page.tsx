@@ -34,11 +34,28 @@ export default function Home() {
           playsInline
           className="absolute inset-0 w-full h-full object-cover opacity-90"
         >
-          <source src="/hero-video.mp4" type="video/mp4" />
+          <source src="/Black and White Elegant Modern Fashion Trend Video.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
 
-        <div className="relative z-10 p-12 pb-48 animate-in fade-in zoom-in duration-1000">
+        {/* Dynamic Text Overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white pointer-events-none z-10 select-none">
+          {/* Cursive text */}
+          <div className="relative mb-2 animate-blur-fade-in opacity-0" style={{ animationDelay: '0.2s' }}>
+            <h2 className="font-great-vibes text-5xl md:text-7xl lg:text-8xl tracking-wider text-center" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
+              discover the
+            </h2>
+            {/* Hand-drawn style underline */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[120%] h-[2px] bg-white/70 rounded-full blur-[0.5px]" style={{ transform: 'translateX(-50%) rotate(-2deg)' }}></div>
+          </div>
+          
+          {/* Serif text */}
+          <h1 className="font-playfair text-6xl md:text-8xl lg:text-[10rem] font-medium tracking-widest uppercase mt-4 text-center animate-blur-fade-in opacity-0 leading-none" style={{ animationDelay: '1.2s', textShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
+            Fashion Trend
+          </h1>
+        </div>
+
+        <div className="relative z-20 p-12 pb-48 animate-in fade-in zoom-in duration-1000" style={{ animationDelay: '2s', animationFillMode: 'both' }}>
           <Link href="#collections">
             <button className="group flex items-center gap-4 bg-transparent backdrop-blur-sm border border-white/30 text-white px-8 py-4 rounded-full font-black uppercase text-[10px] tracking-[0.3em] hover:bg-white hover:text-black hover:border-white transition-all duration-500 shadow-2xl">
               Explore Collections

@@ -9,7 +9,21 @@ const config: Config = {
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        'great-vibes': ['var(--font-great-vibes)'],
+        'playfair': ['var(--font-playfair)'],
+      },
+      keyframes: {
+        'blur-fade-in': {
+          '0%': { opacity: '0', filter: 'blur(12px)', transform: 'translateY(20px) scale(0.95)' },
+          '100%': { opacity: '1', filter: 'blur(0)', transform: 'translateY(0) scale(1)' },
+        }
+      },
+      animation: {
+        'blur-fade-in': 'blur-fade-in 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+      }
+    },
   },
   plugins: [],
 };
