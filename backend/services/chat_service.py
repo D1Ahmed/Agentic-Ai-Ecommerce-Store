@@ -32,7 +32,7 @@ from models.schemas import ChatMessage
 from services.rag_service import retrieve, is_ready, init_catalog, get_product_by_id
 
 # ── Groq clients (singletons) ─────────────────────────────────────────────────
-_groq_clients = [Groq(api_key=key) for key in GROQ_KEYS]
+_groq_clients = [Groq(api_key=key, max_retries=0) for key in GROQ_KEYS]
 
 
 # ── Weather tool ──────────────────────────────────────────────────────────────
