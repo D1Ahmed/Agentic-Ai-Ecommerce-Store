@@ -93,6 +93,7 @@ export default function SellerDashboardPage() {
       setNewDesc("");
       setShowCreate(false);
       queryClient.invalidateQueries({ queryKey: ["sellerData"] });
+      window.dispatchEvent(new Event("refresh_dashboard"));
     },
     onError: (err: any) => {
       alert(err?.response?.data?.detail || "Failed to create collection");
@@ -103,6 +104,7 @@ export default function SellerDashboardPage() {
     mutationFn: (id: number) => deleteCollection(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sellerData"] });
+      window.dispatchEvent(new Event("refresh_dashboard"));
     },
     onError: (err: any) => {
       alert(err?.response?.data?.detail || "Failed to delete");
