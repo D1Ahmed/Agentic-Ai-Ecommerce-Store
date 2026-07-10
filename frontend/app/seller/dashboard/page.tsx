@@ -352,7 +352,7 @@ export default function SellerDashboardPage() {
               return (
                 <div
                   key={col.id}
-                  className={`group bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 ${isOptimistic ? 'opacity-70 animate-pulse pointer-events-none' : 'hover:-translate-y-1'}`}
+                  className={`group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 ${isOptimistic ? 'opacity-70 animate-pulse pointer-events-none' : 'hover:-translate-y-1'}`}
                 >
                   <Link href={`/seller/collections/${col.id}`} className="block p-6">
                     <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative">
