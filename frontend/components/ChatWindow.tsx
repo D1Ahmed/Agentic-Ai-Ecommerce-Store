@@ -24,7 +24,8 @@ export default function ChatWindow() {
     isChatOpen,
     setIsChatOpen,
     pendingImageAnalysis,
-    setPendingImageAnalysis
+    setPendingImageAnalysis,
+    optimisticCollections
   } = useStore();
   const pathname = usePathname();
 
@@ -167,7 +168,8 @@ export default function ChatWindow() {
 
     try {
       const history = buildHistory();
-      const collNames = collections ? collections.map((c: any) => c.name) : [];
+      const combinedCollections = [...(collections || []), ...(optimisticCollections || [])];
+      const collNames = combinedCollections.map((c: any) => c.name);
       const { text, action } = await sendChatMessage(
         userMsg, 
         history, 
