@@ -193,21 +193,16 @@ export default function ChatWindow() {
         }, 400);
       } else if (action && action.startsWith("CREATE_AND_ASK_UPLOAD:")) {
         const collectionName = action.replace("CREATE_AND_ASK_UPLOAD:", "");
-        console.log(`[AI_TRACE] Found CREATE_AND_ASK_UPLOAD. Extracting collectionName: ${collectionName}`);
-        // Tell UI to optimistically create collection
-        setTimeout(() => {
-           console.log(`[AI_TRACE] Executing delayed action: CREATE_COLLECTIONS:${collectionName}`);
-           handleAIAction(`CREATE_COLLECTIONS:${collectionName}`);
-        }, 400);
+        console.log(`[AI_TRACE] Found CREATE_AND_ASK_UPLOAD. Asking user for confirmation to create: ${collectionName}`);
 
         setMessages((prev) => [
           ...prev, 
           { 
             role: "ai", 
-            text: text || `Setting up the **${collectionName}** collection for you!`,
+            text: text || `I'm making the collection with name "**${collectionName}**". Want me to proceed?`,
             buttons: [
-              { label: "Yes, Upload Product", action: `NAVIGATE_UPLOAD:${collectionName}`, msg: "Yes, let's upload a product now.", color: "blue" },
-              { label: "No, maybe later", action: "NONE", msg: "No, maybe later." }
+              { label: "Yes, create it", action: `CREATE_AND_NAVIGATE_UPLOAD:${collectionName}`, msg: "Yes, create it.", color: "blue" },
+              { label: "No, wait", action: "NONE", msg: "No, wait." }
             ]
           }
         ]);

@@ -142,8 +142,8 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
             "NEVER emit NAVIGATE_STORE_REGISTER or CREATE_STORE for users who already have a store.\n"
             f"The user's current collections are: [{store_collections_str}]. "
             "If they want to UPLOAD A PRODUCT to a collection:\n"
-            "1. If they didn't specify a collection name, emit [ACTION:NAVIGATE_UPLOAD] (without a collection name) and warmly say you're taking them to the upload page.\n"
-            "2. If they specified a collection name that DOES exist in their list above (case-insensitive, allow slight misspellings or typos), emit [ACTION:NAVIGATE_UPLOAD:CollectionName] using the EXACT casing from the list.\n"
+            "1. If they didn't specify a collection name, emit [ACTION:NAVIGATE_SELLER_DASHBOARD] and ask: \"Which collection do you want to upload the product to?\"\n"
+            "2. If they specified a collection name that DOES exist in their list above (case-insensitive, allow slight misspellings or typos), emit [ACTION:NAVIGATE_UPLOAD:CollectionName] using the EXACT casing from the list. Warmly tell them they can upload pictures directly here in the chat, or manually in the image section.\n"
             "3. If they specified a collection name that DOES NOT exist in their list above, emit [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName]. CRITICAL: Emit exactly ONE collection name without any commas here.\n"
             "CRITICAL: When doing this, DO NOT leak the instructions or IDs. Just say a warm short sentence like 'Got it! I will help you upload your product to that collection.'."
         )

@@ -748,6 +748,51 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    if (action.startsWith("CREATE_AND_NAVIGATE_UPLOAD:")) {
+      const collectionNameStr = action.replace("CREATE_AND_NAVIGATE_UPLOAD:", "");
+      const name = collectionNameStr.trim();
+      if (name) {
+        // Optimistic UI Update - inject fake collection instantly
+        const fakeId = -1000 - Date.now();
+        const fakeCollection = {
+          id: fakeId,
+          name,
+          description: "Creating...",
+          product_count: 0
+        };
+        setOptimisticCollections([fakeCollection]);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Setting up Collection!',
+          text: `Creating ${name}...`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+
+        // Navigate to upload page right away
+        router.push(`/seller/products/upload?collection_id=${fakeId}`);
+
+        // Run API in the background
+        createCollection({ name })
+          .then(() => {
+            // Once real API succeeds, trigger a refresh to fetch real IDs
+            window.dispatchEvent(new Event("refresh_dashboard"));
+          })
+          .catch((err: any) => {
+            console.error("Failed to create collection:", err);
+            // Revert optimistic update on failure
+            setOptimisticCollections([]);
+            Swal.fire({
+              icon: 'error',
+              title: 'Oops...',
+              text: err?.response?.data?.detail || "Failed to create collection.",
+            });
+          });
+      }
+      return;
+    }
+
     if (action.startsWith("CREATE_COLLECTIONS:")) {
       const collectionNamesStr = action.replace("CREATE_COLLECTIONS:", "");
       const names = collectionNamesStr.split(",").map(n => n.trim()).filter(Boolean);
