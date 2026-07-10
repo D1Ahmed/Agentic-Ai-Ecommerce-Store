@@ -734,15 +734,17 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    if (action.startsWith("NAVIGATE_UPLOAD:")) {
-      const collectionName = action.replace("NAVIGATE_UPLOAD:", "");
-      const collection = [...collections, ...optimisticCollections].find(c => c.name.toLowerCase() === collectionName.toLowerCase());
-      console.log(`[AI_TRACE] NAVIGATE_UPLOAD parsed. collectionName: ${collectionName}, found collection ID: ${collection?.id}`);
-      if (collection) {
-        router.push(`/seller/products/upload?collection_id=${collection.id}`);
-      } else {
-        router.push(`/seller/products/upload`);
+    if (action.startsWith("NAVIGATE_UPLOAD")) {
+      const collectionName = action.replace("NAVIGATE_UPLOAD:", "").replace("NAVIGATE_UPLOAD", "");
+      if (collectionName) {
+        const collection = [...collections, ...optimisticCollections].find(c => c.name.toLowerCase() === collectionName.toLowerCase());
+        console.log(`[AI_TRACE] NAVIGATE_UPLOAD parsed. collectionName: ${collectionName}, found collection ID: ${collection?.id}`);
+        if (collection) {
+          router.push(`/seller/products/upload?collection_id=${collection.id}`);
+          return;
+        }
       }
+      router.push(`/seller/products/upload`);
       return;
     }
 
