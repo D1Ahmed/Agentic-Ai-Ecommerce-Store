@@ -546,10 +546,10 @@ async def run_chat(
         success = False
         
         # ── 3. Try Groq clients ───────────────────────────────────────────────
-        for idx, client in enumerate(_groq_clients):
+        for model in GROQ_MODELS_PRIMARY:
             if success:
                 break
-            for model in GROQ_MODELS_PRIMARY:
+            for idx, client in enumerate(_groq_clients):
                 try:
                     print(f"[GROQ-{idx}] Trying {model}...")
                     text = _call_groq(client, model, messages)
