@@ -39,24 +39,23 @@ export default function Home() {
         </video>
 
         {/* Dynamic Text Overlay */}
-        <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 md:pb-24 text-white pointer-events-none z-10 select-none">
-          
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-4 md:pb-3 text-white pointer-events-none z-10 select-none">
+
           <div className="relative flex flex-col items-center w-full max-w-7xl px-4">
             {/* Cursive text */}
-            <div className="relative animate-blur-fade-in z-20 translate-y-6 md:translate-y-10" style={{ animationDelay: '0.5s' }}>
-              <h2 className="font-great-vibes text-6xl md:text-7xl lg:text-[7rem] font-light text-center" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+            <div className="relative animate-blur-fade-in z-20 translate-y-2 md:translate-y-1" style={{ animationDelay: '0.5s' }}>
+              {/* Change fontWeight from 100 (thinnest) to 900 (thickest) */}
+              <h2 className="font-modernline text-3xl md:text-7xl lg:text-[5rem] text-center" style={{ fontWeight: 50, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
                 discover the
               </h2>
-              {/* Hand-drawn style underline (left aligned under 'discover') */}
-              <div className="absolute -bottom-1 left-[5%] w-[60%] h-[1.5px] bg-white/70 rounded-full blur-[0.5px]" style={{ transform: 'rotate(-1.5deg)' }}></div>
             </div>
-            
+
             {/* Serif text */}
-            <h1 className="font-playfair text-6xl md:text-8xl lg:text-[10rem] font-normal uppercase text-center animate-blur-fade-in leading-none z-10" style={{ animationDelay: '2s', textShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
+            <h1 className="font-brown-sugar text-6xl md:text-8xl lg:text-[11rem] font-normal uppercase text-center animate-blur-fade-in leading-none z-10" style={{ animationDelay: '2s', textShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
               Fashion Trend
             </h1>
           </div>
-          
+
         </div>
 
         <div className="relative z-20 p-12 pb-48 animate-in fade-in zoom-in duration-1000" style={{ animationDelay: '2s', animationFillMode: 'both' }}>

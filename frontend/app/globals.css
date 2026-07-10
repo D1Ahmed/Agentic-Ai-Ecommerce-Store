@@ -12,8 +12,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-great-vibes: var(--font-great-vibes);
-  --font-playfair: var(--font-playfair);
+  --font-brown-sugar: 'Brown Sugar', serif;
+  --font-allura: 'Allura', cursive;
+  --font-modernline: 'Modernline', cursive;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,6 +31,28 @@ body {
 }
 
 @layer base {
+  @font-face {
+    font-family: 'Brown Sugar';
+    src: url('/Brown-Sugar/Brown-Sugar-Regular.woff2') format('woff2'),
+         url('/Brown-Sugar/Brown-Sugar-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'Allura';
+    src: url('/Allura-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Modernline';
+    src: url('/modernline.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+
   input, textarea, select {
     color: #0f172a;
   }
