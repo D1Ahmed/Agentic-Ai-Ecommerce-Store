@@ -41,7 +41,7 @@ export default function Home() {
         {/* Dynamic Text Overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white pointer-events-none z-10 select-none">
           {/* Cursive text */}
-          <div className="relative mb-2 animate-blur-fade-in opacity-0" style={{ animationDelay: '0.2s' }}>
+          <div className="relative mb-2 animate-blur-fade-in" style={{ animationDelay: '0.2s' }}>
             <h2 className="font-great-vibes text-5xl md:text-7xl lg:text-8xl tracking-wider text-center" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
               discover the
             </h2>
@@ -50,7 +50,7 @@ export default function Home() {
           </div>
           
           {/* Serif text */}
-          <h1 className="font-playfair text-6xl md:text-8xl lg:text-[10rem] font-medium tracking-widest uppercase mt-4 text-center animate-blur-fade-in opacity-0 leading-none" style={{ animationDelay: '1.2s', textShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
+          <h1 className="font-playfair text-6xl md:text-8xl lg:text-[10rem] font-medium tracking-widest uppercase mt-4 text-center animate-blur-fade-in leading-none" style={{ animationDelay: '1.2s', textShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
             Fashion Trend
           </h1>
         </div>

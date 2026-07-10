@@ -32,3 +32,14 @@ body {
     color: #0f172a;
   }
 }
+
+@layer utilities {
+  @keyframes blur-fade-in {
+    0% { opacity: 0; filter: blur(12px); transform: translateY(20px) scale(0.95); }
+    100% { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+  }
+  
+  .animate-blur-fade-in {
+    animation: blur-fade-in 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
