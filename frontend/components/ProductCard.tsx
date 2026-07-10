@@ -67,7 +67,7 @@ export default function ProductCard({ product }: { product: any }) {
   const stockCount = product.stock ?? 0;
 
   return (
-    <div className="group relative bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 flex flex-col h-full">
+    <div className="group relative bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 flex flex-col h-full">
       <Link
         href={`/collections/${product.id}`}
         className="flex-grow cursor-pointer"
