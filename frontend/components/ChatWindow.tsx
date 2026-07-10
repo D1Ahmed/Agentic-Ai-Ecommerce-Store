@@ -218,6 +218,28 @@ export default function ChatWindow() {
             ]
           }
         ]);
+      } else if (action && action.startsWith("CREATE_COLLECTIONS:")) {
+        const collectionNamesStr = action.replace("CREATE_COLLECTIONS:", "");
+        const names = collectionNamesStr.split(",").map(n => n.trim()).filter(Boolean);
+        const firstName = names[0];
+
+        setMessages((prev) => [
+          ...prev, 
+          { 
+            role: "ai", 
+            text: text || `Got it! I am creating the collection. Do you want to upload a product to ${firstName} right now?`,
+            buttons: firstName ? [
+              { label: `Yes, upload to ${firstName}`, action: "NONE", msg: `Yes, I want to upload a product to the ${firstName} collection.`, color: "blue" },
+              { label: "No thanks", action: "NONE", msg: "No thanks." }
+            ] : undefined
+          }
+        ]);
+
+        console.log(`[AI_TRACE] Queuing standard action for 400ms: ${action}`);
+        setTimeout(() => {
+          console.log(`[AI_TRACE] Executing delayed action: ${action}`);
+          handleAIAction(action);
+        }, 400);
       } else {
         if (text) {
           setMessages((prev) => [...prev, { role: "ai", text }]);
