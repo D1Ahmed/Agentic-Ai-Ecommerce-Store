@@ -171,7 +171,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Failed to fetch products", err);
     } finally {
       const endTime = performance.now();
-      setProductsLoadTime(endTime - startTime);
+      const duration = endTime - startTime;
+      console.log(`[PERFORMANCE] Products loaded in ${duration.toFixed(2)}ms`);
+      setProductsLoadTime(duration);
       setIsProductsLoading(false);
     }
   };

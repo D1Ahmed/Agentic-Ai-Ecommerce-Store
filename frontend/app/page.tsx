@@ -64,12 +64,6 @@ export default function Home() {
               Explore our complete archive of premium apparel.
             </p>
           </div>
-          {productsLoadTime !== null && (
-            <div className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-400"></span>
-              Loaded in {productsLoadTime.toFixed(0)}ms
-            </div>
-          )}
         </div>
 
         {!isMounted || isProductsLoading ? (
