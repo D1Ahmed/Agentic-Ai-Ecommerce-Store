@@ -110,7 +110,7 @@ async def create_collection(store_id: int, name: str, description: Optional[str]
             where={"store_id": store_id, "name": name}
         )
         if existing:
-            raise ValueError(f"A collection named '{name}' already exists in your store")
+            return existing
 
         return await db.collection.create(
             data={

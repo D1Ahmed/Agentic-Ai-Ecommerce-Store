@@ -15,10 +15,19 @@ interface Message {
 }
 
 export default function ChatWindow() {
-  const { handleAIAction, user, hasStore, isAuthenticated, collections } = useStore();
+  const { 
+    handleAIAction, 
+    user, 
+    hasStore, 
+    isAuthenticated, 
+    collections,
+    isChatOpen,
+    setIsChatOpen,
+    pendingImageAnalysis,
+    setPendingImageAnalysis
+  } = useStore();
   const pathname = usePathname();
 
-  const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedImages, setSelectedImages] = useState<{ file: File; base64: string }[]>([]);
@@ -93,6 +102,27 @@ export default function ChatWindow() {
       },
     ]);
   }, [user?.id, user?.name]);
+
+  // Process manual image analysis requests from upload pages
+  useEffect(() => {
+    if (pendingImageAnalysis && pendingImageAnalysis.length > 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          text: "I noticed you're uploading product images! Would you like me to analyze them and fill out the form for you? ✨",
+          buttons: [
+            { label: "Yes, populate for me", action: "TRIGGER_IMAGE_ANALYSIS", msg: "Yes, please analyze these images and populate the form.", color: "blue" },
+            { label: "No, thanks", action: "NONE", msg: "No, thanks." }
+          ]
+        }
+      ]);
+      // Save files so the button click can access them
+      (window as any).__pendingAnalysisFiles = pendingImageAnalysis;
+      setPendingImageAnalysis(null);
+    }
+  }, [pendingImageAnalysis, setPendingImageAnalysis]);
+
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -110,10 +140,10 @@ export default function ChatWindow() {
 
   // Auto-scroll on new message
   useEffect(() => {
-    if (scrollRef.current && isOpen) {
+    if (scrollRef.current && isChatOpen) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isLoading, isOpen]);
+  }, [messages, isLoading, isChatOpen]);
 
   /** Build Groq-compatible history from our message list (exclude the welcome message). */
   const buildHistory = (): ChatHistoryMessage[] => {
@@ -163,26 +193,57 @@ export default function ChatWindow() {
         }, 400);
       } else if (action && action.startsWith("CREATE_AND_ASK_UPLOAD:")) {
         const collectionName = action.replace("CREATE_AND_ASK_UPLOAD:", "");
-        console.log(`[AI_TRACE] Found CREATE_AND_ASK_UPLOAD. Extracting collectionName: ${collectionName}`);
-        // Tell UI to optimistically create collection
-        setTimeout(() => {
-           console.log(`[AI_TRACE] Executing delayed action: CREATE_COLLECTIONS:${collectionName}`);
-           handleAIAction(`CREATE_COLLECTIONS:${collectionName}`);
-        }, 400);
+        console.log(`[AI_TRACE] Found CREATE_AND_ASK_UPLOAD. Asking user for confirmation to create: ${collectionName}`);
 
         setMessages((prev) => [
           ...prev, 
           { 
             role: "ai", 
-            text: text || `Setting up the **${collectionName}** collection for you!`,
+            text: text || `I'm making the collection with name "**${collectionName}**". Want me to proceed?`,
             buttons: [
-              { label: "Yes, Upload Product", action: `NAVIGATE_UPLOAD:${collectionName}`, msg: "Yes, let's upload a product now.", color: "blue" },
+              { label: "Yes, create it", action: `CREATE_AND_NAVIGATE_UPLOAD:${collectionName}`, msg: "Yes, create it.", color: "blue" },
+              { label: "No, wait", action: "NONE", msg: "No, wait." }
+            ]
+          }
+        ]);
+      } else if (action === "ASK_CREATE_STORE") {
+        setMessages((prev) => [
+          ...prev, 
+          { 
+            role: "ai", 
+            text: text || "You need a store first to upload products! Would you like me to help you create one right now?",
+            buttons: [
+              { label: "Yes, create my store", action: "NONE", msg: "Yes, please help me create my store.", color: "blue" },
               { label: "No, maybe later", action: "NONE", msg: "No, maybe later." }
             ]
           }
         ]);
+      } else if (action && action.startsWith("CREATE_COLLECTIONS:")) {
+        const collectionNamesStr = action.replace("CREATE_COLLECTIONS:", "");
+        const names = collectionNamesStr.split(",").map(n => n.trim()).filter(Boolean);
+        const firstName = names[0];
+
+        setMessages((prev) => [
+          ...prev, 
+          { 
+            role: "ai", 
+            text: text || `Got it! I am creating the collection. Do you want to upload a product to ${firstName} right now?`,
+            buttons: firstName ? [
+              { label: `Yes, upload to ${firstName}`, action: "SEND_TO_AI", msg: `Yes, I want to upload a product to the ${firstName} collection.`, color: "blue" },
+              { label: "No thanks", action: "NONE", msg: "No thanks." }
+            ] : undefined
+          }
+        ]);
+
+        console.log(`[AI_TRACE] Queuing standard action for 400ms: ${action}`);
+        setTimeout(() => {
+          console.log(`[AI_TRACE] Executing delayed action: ${action}`);
+          handleAIAction(action);
+        }, 400);
       } else {
-        setMessages((prev) => [...prev, { role: "ai", text }]);
+        if (text) {
+          setMessages((prev) => [...prev, { role: "ai", text }]);
+        }
         if (action && action !== "NONE") {
           console.log(`[AI_TRACE] Queuing standard action for 400ms: ${action}`);
           setTimeout(() => {
@@ -222,7 +283,7 @@ export default function ChatWindow() {
   return (
     <AnimatePresence>
       {/* ── Floating bubble ─────────────────────────────────────────────────── */}
-      {!isOpen ? (
+      {!isChatOpen ? (
         <motion.button
           key="bubble"
           layoutId="chat-widget"
@@ -230,7 +291,7 @@ export default function ChatWindow() {
           dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
           dragElastic={0.6}
           onDragEnd={handleDragEnd}
-          onClick={() => setIsOpen(true)}
+          onClick={() => setIsChatOpen(true)}
           className={`fixed bottom-4 md:bottom-8 z-[9999] bg-slate-900 text-white p-4 md:p-5 rounded-full shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition-colors flex items-center gap-3 border border-white/10 ${
             side === "right" ? "right-4 md:right-8" : "left-4 md:left-8"
           } cursor-grab active:cursor-grabbing hover:bg-blue-600 group`}
@@ -284,7 +345,7 @@ export default function ChatWindow() {
             </div>
             <button
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => setIsOpen(false)}
+              onClick={() => setIsChatOpen(false)}
               className="text-slate-400 hover:text-white transition-colors p-1"
             >
               <X size={20} />
@@ -398,13 +459,66 @@ export default function ChatWindow() {
                             <button
                               key={idx}
                               onClick={() => {
-                                // Add user message
                                 setMessages(prev => [...prev, { role: "user", text: btn.msg }]);
-                                // Execute action
-                                if (btn.action && btn.action !== "NONE") {
+                                if (btn.action === "TRIGGER_IMAGE_ANALYSIS") {
+                                  const files = (window as any).__pendingAnalysisFiles || [];
+                                  if (files.length > 0) {
+                                    // Process images to base64, then send
+                                    const processed: any[] = [];
+                                    let processedCount = 0;
+                                    files.forEach((file: File) => {
+                                      const reader = new FileReader();
+                                      reader.onload = (e) => {
+                                        const img = new Image();
+                                        img.onload = () => {
+                                          const canvas = document.createElement('canvas');
+                                          const MAX_WIDTH = 800;
+                                          const MAX_HEIGHT = 800;
+                                          let width = img.width;
+                                          let height = img.height;
+                                          if (width > height) {
+                                            if (width > MAX_WIDTH) {
+                                              height *= MAX_WIDTH / width;
+                                              width = MAX_WIDTH;
+                                            }
+                                          } else {
+                                            if (height > MAX_HEIGHT) {
+                                              width *= MAX_HEIGHT / height;
+                                              height = MAX_HEIGHT;
+                                            }
+                                          }
+                                          canvas.width = width;
+                                          canvas.height = height;
+                                          const ctx = canvas.getContext('2d');
+                                          ctx?.drawImage(img, 0, 0, width, height);
+                                          processed.push({ file, base64: canvas.toDataURL('image/jpeg', 0.7) });
+                                          processedCount++;
+                                          if (processedCount === files.length) {
+                                            setSelectedImages(processed);
+                                            // setTimeout to allow state to settle before send, though sendMessage might need adjusting if it relies on selectedImages state immediately.
+                                            // A cleaner way is to simulate input and click send.
+                                            setInput(btn.msg);
+                                            setTimeout(() => {
+                                              const btn = document.getElementById("chat-send-btn");
+                                              if (btn) btn.click();
+                                            }, 50);
+                                          }
+                                        };
+                                        img.src = e.target?.result as string;
+                                      };
+                                      reader.readAsDataURL(file);
+                                    });
+                                  }
+                                } else if (btn.action === "SEND_TO_AI") {
+                                  // Hack to send the message through the chat input
+                                  setInput(btn.msg);
+                                  setTimeout(() => {
+                                    const sendBtn = document.getElementById("chat-send-btn");
+                                    if (sendBtn) sendBtn.click();
+                                  }, 50);
+                                } else if (btn.action && btn.action !== "NONE") {
                                   handleAIAction(btn.action);
                                 }
-                                // Optionally hide buttons after clicking? (We'll leave them for now or let them scroll up)
                               }}
                               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                                 btn.color === "blue" 
@@ -462,20 +576,24 @@ export default function ChatWindow() {
               </div>
             )}
             <div className="relative flex items-center gap-2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
-              >
-                <Paperclip size={18} />
-              </button>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                accept="image/*" 
-                multiple
-                className="hidden" 
-                onChange={handleImageSelect} 
-              />
+              {(pathname.includes('/seller/products/upload') || pathname.includes('/seller/products/edit')) && (
+                <>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                  >
+                    <Paperclip size={18} />
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    accept="image/*" 
+                    multiple
+                    className="hidden" 
+                    onChange={handleImageSelect} 
+                  />
+                </>
+              )}
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -485,6 +603,7 @@ export default function ChatWindow() {
                 className="flex-1 pl-2 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-600 focus:border-transparent text-[16px] md:text-[14px] text-slate-900 font-medium outline-none transition-all placeholder:text-slate-400 resize-none"
               />
               <button
+                id="chat-send-btn"
                 onClick={sendMessage}
                 disabled={(!input.trim() && selectedImages.length === 0) || isLoading}
                 className="p-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-40 disabled:hover:bg-slate-900 flex-shrink-0"

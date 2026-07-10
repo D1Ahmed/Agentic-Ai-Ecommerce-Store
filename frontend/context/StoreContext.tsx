@@ -30,6 +30,8 @@ import {
   setStoredUser,
   getStoredCart,
   setStoredCart,
+  getStoredProducts,
+  setStoredProducts,
   fetchNotifications,
   registerStore,
   createCollection,
@@ -44,8 +46,11 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   // This means the UI shows the correct auth state INSTANTLY with zero flash.
   const cachedUser = getStoredUser();
   const cachedCart = cachedUser ? getStoredCart() : getGuestCart();
+  const cachedProducts = getStoredProducts();
 
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(cachedProducts);
+  const [isProductsLoading, setIsProductsLoading] = useState(cachedProducts.length === 0);
+  const [productsLoadTime, setProductsLoadTime] = useState<number | null>(null);
   const [cart, setCartState] = useState<CartItem[]>(cachedCart);
   const [user, setUser] = useState<User | null>(cachedUser);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -68,6 +73,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [cartOpen, setCartOpen] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [pendingProductUpload, setPendingProductUpload] = useState<any>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [pendingImageAnalysis, setPendingImageAnalysis] = useState<File[] | null>(null);
 
   // Expose this globally so ChatWindow can inject the File object directly
   useEffect(() => {
@@ -153,11 +160,23 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   }, [cart, user, scheduleCartSync]);
 
   const loadProducts = async () => {
+    // Only show loading state if we don't have cached products
+    if (products.length === 0) {
+      setIsProductsLoading(true);
+    }
+    const startTime = performance.now();
     try {
       const data = await fetchProducts();
       setProducts(data);
+      setStoredProducts(data);
     } catch (err) {
       console.error("Failed to fetch products", err);
+    } finally {
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      console.log(`[PERFORMANCE] Products loaded in ${duration.toFixed(2)}ms`);
+      setProductsLoadTime(duration);
+      setIsProductsLoading(false);
     }
   };
 
@@ -231,6 +250,22 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       setNotifications([]);
     }
   }, [isAuthenticated]);
+
+  // Global event listener for refreshing store data
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (hasStore) {
+        import("@/lib/api").then(({ fetchMyCollections }) => {
+          fetchMyCollections().then((data) => {
+            setCollections(data);
+            setOptimisticCollections([]);
+          }).catch(() => {});
+        });
+      }
+    };
+    window.addEventListener("refresh_dashboard", handleRefresh);
+    return () => window.removeEventListener("refresh_dashboard", handleRefresh);
+  }, [hasStore]);
 
   const getItemKey = (item: CartItem) => `${item.id}-${item.selected_size || ''}-${item.selected_color || ''}`;
 
@@ -715,14 +750,61 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    if (action.startsWith("NAVIGATE_UPLOAD:")) {
-      const collectionName = action.replace("NAVIGATE_UPLOAD:", "");
-      const collection = [...collections, ...optimisticCollections].find(c => c.name.toLowerCase() === collectionName.toLowerCase());
-      console.log(`[AI_TRACE] NAVIGATE_UPLOAD parsed. collectionName: ${collectionName}, found collection ID: ${collection?.id}`);
-      if (collection) {
-        router.push(`/seller/products/upload?collection_id=${collection.id}`);
-      } else {
-        router.push(`/seller/products/upload`);
+    if (action.startsWith("NAVIGATE_UPLOAD")) {
+      const collectionName = action.replace("NAVIGATE_UPLOAD:", "").replace("NAVIGATE_UPLOAD", "");
+      if (collectionName) {
+        const collection = [...collections, ...optimisticCollections].find(c => c.name.toLowerCase() === collectionName.toLowerCase());
+        console.log(`[AI_TRACE] NAVIGATE_UPLOAD parsed. collectionName: ${collectionName}, found collection ID: ${collection?.id}`);
+        if (collection) {
+          router.push(`/seller/products/upload?collection_id=${collection.id}`);
+          return;
+        }
+      }
+      router.push(`/seller/products/upload`);
+      return;
+    }
+
+    if (action.startsWith("CREATE_AND_NAVIGATE_UPLOAD:")) {
+      const collectionNameStr = action.replace("CREATE_AND_NAVIGATE_UPLOAD:", "");
+      const name = collectionNameStr.trim();
+      if (name) {
+        // Optimistic UI Update - inject fake collection instantly
+        const fakeId = -1000 - Date.now();
+        const fakeCollection = {
+          id: fakeId,
+          name,
+          description: "Creating...",
+          product_count: 0
+        };
+        setOptimisticCollections([fakeCollection]);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Setting up Collection!',
+          text: `Creating ${name}...`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+
+        // Navigate to upload page right away
+        router.push(`/seller/products/upload?collection_id=${fakeId}`);
+
+        // Run API in the background
+        createCollection({ name })
+          .then(() => {
+            // Once real API succeeds, trigger a refresh to fetch real IDs
+            window.dispatchEvent(new Event("refresh_dashboard"));
+          })
+          .catch((err: any) => {
+            console.error("Failed to create collection:", err);
+            // Revert optimistic update on failure
+            setOptimisticCollections([]);
+            Swal.fire({
+              icon: 'error',
+              title: 'Oops...',
+              text: err?.response?.data?.detail || "Failed to create collection.",
+            });
+          });
       }
       return;
     }
@@ -802,6 +884,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         products,
         setProducts,
+        isProductsLoading,
+        productsLoadTime,
         cart,
         setCart,
         user,
@@ -838,6 +922,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         collections,
         pendingProductUpload,
         setPendingProductUpload,
+        isChatOpen,
+        setIsChatOpen,
+        pendingImageAnalysis,
+        setPendingImageAnalysis,
       }}
     >
       {children}

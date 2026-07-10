@@ -209,27 +209,36 @@ def _product_to_document(p: Any) -> str:
 
 
 def _matches_filters(p: Any, intent: dict) -> bool:
-    if intent["gender"] and (p.gender or "").lower() != intent["gender"].lower():
-        # Allow Unisex to match any gender query
-        if (p.gender or "").lower() != "unisex":
+    if intent["gender"]:
+        g = (p.gender or "").lower()
+        if g and g != intent["gender"].lower() and g != "unisex":
             return False
-    if intent["season"] and (p.season or "").lower() != intent["season"].lower():
-        if (p.season or "").lower() != "all season":
+    if intent["season"]:
+        s = (p.season or "").lower()
+        if s and s != intent["season"].lower() and s != "all season":
             return False
-    if intent["sub_category"] and (p.sub_category or "").lower() != intent["sub_category"].lower():
-        return False
+    if intent["sub_category"]:
+        sc = (p.sub_category or "").lower()
+        if sc and sc != intent["sub_category"].lower():
+            return False
     if intent["max_price"] is not None and p.price > intent["max_price"]:
         return False
     if intent["min_price"] is not None and p.price < intent["min_price"]:
         return False
     if intent["on_sale"] and not p.is_on_sale:
         return False
-    if intent["material"] and intent["material"] not in (p.material or "").lower():
-        return False
-    if intent["style"] and intent["style"] not in (p.style or "").lower():
-        return False
-    if intent["occasion"] and intent["occasion"] not in (p.occasion or "").lower():
-        return False
+    if intent["material"]:
+        m = (p.material or "").lower()
+        if m and intent["material"] not in m:
+            return False
+    if intent["style"]:
+        st = (p.style or "").lower()
+        if st and intent["style"] not in st:
+            return False
+    if intent["occasion"]:
+        o = (p.occasion or "").lower()
+        if o and intent["occasion"] not in o:
+            return False
     return True
 
 

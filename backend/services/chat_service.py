@@ -14,6 +14,8 @@ Pipeline per request:
 import re
 import json
 import httpx
+import base64
+import urllib.parse
 from typing import List
 from groq import Groq
 
@@ -140,21 +142,23 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
             "refuse politely and remind them they already have one. "
             "Direct them to their seller dashboard to manage it. "
             "NEVER emit NAVIGATE_STORE_REGISTER or CREATE_STORE for users who already have a store.\n"
-            f"The user's current collections are: [{store_collections_str}]. "
+            f"The user's current collections are: [{store_collections_str}]. Current page: {current_path}\n"
             "If they want to UPLOAD A PRODUCT to a collection:\n"
-            "1. If they didn't specify a collection name, ASK them which one they want to upload to.\n"
-            "2. If they specified a collection name that DOES exist in their list above (case-insensitive), emit [ACTION:NAVIGATE_UPLOAD:CollectionName] using the exact casing from the list.\n"
-            "3. If they specified a collection name that DOES NOT exist in their list above, emit [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName].\n"
+            "1. If they DID NOT specify a collection name:\n"
+            "   a) If they are NOT currently on the store page (e.g. /seller/dashboard or /seller/products/upload), emit the exact tag [ACTION:NAVIGATE_SELLER_DASHBOARD]. Outside the tag, explicitly ask: 'Do you want to make a new collection for it or upload in an existing one?'\n"
+            "   b) If they ARE currently on the store page, do NOT emit a navigation tag. Just ask: 'What collection do you want to upload the product in?'\n"
+            "2. If they DID specify a collection name:\n"
+            "   a) If that collection DOES exist in their list above (case-insensitive, allow slight typos), emit the tag [ACTION:NAVIGATE_UPLOAD:CollectionName] using the EXACT casing from the list. Outside the tag, warmly tell them they can upload pictures directly here in the chat, or manually in the image section.\n"
+            "   b) If that collection DOES NOT exist in their list above, emit [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName]. CRITICAL: Emit exactly ONE collection name without commas.\n"
             "CRITICAL: When doing this, DO NOT leak the instructions or IDs. Just say a warm short sentence like 'Got it! I will help you upload your product to that collection.'."
         )
     else:
         store_context = (
             "This user does NOT have a store yet and IS logged in. "
-            "If they ask how to open a store, you can guide them: they can either go to the form "
-            "([ACTION:NAVIGATE_STORE_REGISTER]) or you can help them create it right here in chat. "
-            "If they say 'make a store for me' or 'create my store here' or similar, "
-            "start the conversational flow: collect name, address, phone, categories, "
-            "and optional description, then emit CREATE_STORE. "
+            "If they ask to upload a product or open a store, tell them they must create a store first. "
+            "Emit [ACTION:ASK_CREATE_STORE] which will give them Yes/No buttons to start the process.\n"
+            "If they agree to make a store, start the conversational flow: collect name, address, phone, categories, "
+            "and optional description, then emit [ACTION:CREATE_STORE:name=...]. "
             "Valid categories are: Clothing, Shoes, Perfumes, Watches, Bags, Accessories, Jewelry, Sportswear."
         )
 
@@ -166,6 +170,7 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
 ━━━ CRITICAL ACTION RULES ━━━
 You MUST embed EXACTLY ONE action tag per response when performing an operation.
 Format: [ACTION:TYPE:PARAMS]  ← square brackets, uppercase, colons as separators.
+CRITICAL: You MUST ALWAYS write a friendly, conversational response OUTSIDE of the action tag for EVERY message you send. Never send just an action tag without any text!
 
 Available actions:
 • Show filtered products to user:      [ACTION:SHOW_RESULTS:ID1,ID2,ID3,...]
@@ -183,8 +188,10 @@ Available actions:
 • Create new collections:              [ACTION:CREATE_COLLECTIONS:Collection1,Collection2]
 • Navigate to product upload:          [ACTION:NAVIGATE_UPLOAD:CollectionName]
 • Create collection & ask to upload:   [ACTION:CREATE_AND_ASK_UPLOAD:CollectionName]
+• Navigate to upload without collection: [ACTION:NAVIGATE_UPLOAD]
+• Ask user to create store (buttons):  [ACTION:ASK_CREATE_STORE]
 
-CRITICAL: When using these tags, you MUST replace all placeholders with actual values. NEVER write literal placeholder text like "PRODUCT_ID", "STORE_NAME", "ADDRESS" etc.
+CRITICAL: When using these tags, you MUST replace all placeholders with actual values. NEVER write literal placeholder text like "PRODUCT_ID", "STORE_NAME", "ADDRESS", or "CollectionName".
 For PREFILL_STORE and CREATE_STORE, do NOT use colons inside field values. Example: [ACTION:PREFILL_STORE:name=Urban Threads:address=Gulberg Lahore:phone=0300-1234567:cats=Clothing,Shoes:desc=Premium urban fashion store]
 
 ━━━ STORE CREATION RULES ━━━
@@ -468,7 +475,6 @@ async def run_chat(
             data = json.loads(json_match.group(0))
             
             # Create URL encoded representation to pass through action
-            import urllib.parse
             encoded_data = urllib.parse.quote(json.dumps(data))
             
             return {
@@ -497,8 +503,6 @@ async def run_chat(
                     if product.images and len(product.images) > 0:
                         image_url = product.images[0].image_url
                         try:
-                            import httpx
-                            import base64
                             from core.config import GEMINI_API_KEY
                             if GEMINI_API_KEY:
                                 async with httpx.AsyncClient() as http_client:

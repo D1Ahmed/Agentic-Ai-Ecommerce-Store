@@ -3,6 +3,7 @@ from typing import List, Set, Optional
 from models.schemas import OrderItem
 from db.client import get_db
 from services.cart_service import clear_user_cart
+from services.product_service import clear_products_cache
 
 
 async def decrement_stock(
@@ -56,6 +57,9 @@ async def decrement_stock(
                         "purchase_count": {"increment": item.quantity},
                     },
                 )
+        
+        # Invalidate the products cache so the updated stock is reflected
+        clear_products_cache()
 
     if user_id is not None:
         async with get_db() as db:

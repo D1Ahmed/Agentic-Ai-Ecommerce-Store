@@ -37,7 +37,12 @@ const SUB_CATEGORIES = {
 };
 
 export default function ProductEditPage() {
-  const { isAuthenticated, isAuthLoading } = useStore();
+  const { 
+    isAuthenticated, 
+    isAuthLoading,
+    setIsChatOpen,
+    setPendingImageAnalysis
+  } = useStore();
   const router = useRouter();
   const { id } = useParams();
   const productId = Number(id);
@@ -161,6 +166,11 @@ export default function ProductEditPage() {
     const newPreviews = files.map(f => URL.createObjectURL(f));
     setNewPreviewUrls(prev => [...prev, ...newPreviews]);
     setError("");
+
+    if (files.length > 0) {
+      setPendingImageAnalysis(files);
+      setIsChatOpen(true);
+    }
   };
 
   const removeNewImage = (index: number) => {
