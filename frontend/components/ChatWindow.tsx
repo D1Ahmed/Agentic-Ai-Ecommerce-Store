@@ -229,7 +229,7 @@ export default function ChatWindow() {
             role: "ai", 
             text: text || `Got it! I am creating the collection. Do you want to upload a product to ${firstName} right now?`,
             buttons: firstName ? [
-              { label: `Yes, upload to ${firstName}`, action: "NONE", msg: `Yes, I want to upload a product to the ${firstName} collection.`, color: "blue" },
+              { label: `Yes, upload to ${firstName}`, action: "SEND_TO_AI", msg: `Yes, I want to upload a product to the ${firstName} collection.`, color: "blue" },
               { label: "No thanks", action: "NONE", msg: "No thanks." }
             ] : undefined
           }
@@ -509,6 +509,13 @@ export default function ChatWindow() {
                                       reader.readAsDataURL(file);
                                     });
                                   }
+                                } else if (btn.action === "SEND_TO_AI") {
+                                  // Hack to send the message through the chat input
+                                  setInput(btn.msg);
+                                  setTimeout(() => {
+                                    const sendBtn = document.getElementById("chat-send-btn");
+                                    if (sendBtn) sendBtn.click();
+                                  }, 50);
                                 } else if (btn.action && btn.action !== "NONE") {
                                   handleAIAction(btn.action);
                                 }
