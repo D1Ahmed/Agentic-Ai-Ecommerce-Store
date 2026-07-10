@@ -37,7 +37,7 @@ export default function SignUpPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-20">
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-100 shadow-xl p-8 md:p-10">
         <div className="text-center mb-8">
-          <div className="font-black text-3xl tracking-tighter uppercase italic mb-2">
+          <div className="text-slate-900 font-black text-3xl tracking-tighter uppercase italic mb-2">
             HD<span className="text-blue-600">wear</span>
           </div>
           <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">
