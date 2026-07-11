@@ -75,7 +75,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent; /* Fully transparent glossy track */
+  background: #f1f1f1; /* Default Chrome grey track */
 }
 
 ::-webkit-scrollbar-thumb {
@@ -89,6 +89,6 @@ body {
 
 /* For Firefox */
 * {
-  scrollbar-color: #2563eb transparent;
+  scrollbar-color: #2563eb #f1f1f1;
   scrollbar-width: thin;
 }
