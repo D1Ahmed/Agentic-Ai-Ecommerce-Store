@@ -69,26 +69,44 @@ body {
   }
 }
 
-/* Custom Blue Scrollbar */
-html::-webkit-scrollbar {
+/* Custom Blue Scrollbar (Global) */
+::-webkit-scrollbar {
   width: 10px;
 }
 
-html::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: #2b2b2b; /* Chrome's native dark mode track grey */
 }
 
-html::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: #2563eb; /* blue-600 */
   border-radius: 5px;
 }
 
-html::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: #1d4ed8; /* blue-700 */
 }
 
+/* Chat Window Scrollbar (Simulating native default look on light bg) */
+.no-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.no-scrollbar::-webkit-scrollbar-track {
+  background: transparent; 
+}
+.no-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1; 
+  border-radius: 4px;
+}
+.no-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8; 
+}
+
 /* For Firefox */
-html {
+* {
   scrollbar-color: #2563eb #2b2b2b;
   scrollbar-width: thin;
+}
+.no-scrollbar {
+  scrollbar-color: #c1c1c1 transparent;
 }
