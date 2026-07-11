@@ -18,7 +18,6 @@ from services.review_service import (
 router = APIRouter(prefix="/products", tags=["Reviews & Q&A"])
 
 
-# ── Reviews ───────────────────────────────────────────────────────────────────
 
 @router.post("/{product_id}/reviews")
 async def post_review(product_id: int, body: ReviewCreate, user=Depends(get_current_user)):
@@ -69,7 +68,6 @@ async def check_can_review(product_id: int, user=Depends(get_current_user)):
     return {"can_review": can}
 
 
-# ── Q&A ───────────────────────────────────────────────────────────────────────
 
 @router.post("/{product_id}/questions")
 async def ask_question(product_id: int, body: QuestionCreate, user=Depends(get_current_user)):
@@ -102,7 +100,6 @@ async def list_questions(product_id: int):
     ]
 
 
-# ── View Tracking ─────────────────────────────────────────────────────────────
 
 @router.post("/{product_id}/view")
 async def track_view(product_id: int):

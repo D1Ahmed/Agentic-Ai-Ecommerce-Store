@@ -34,7 +34,6 @@ from core.config import (
 )
 from services.product_service import get_all_products
 
-# ── Globals ───────────────────────────────────────────────────────────────────
 _index: Any = None
 _faiss_products: List[Any] = []
 _products: List[Any] = []
@@ -45,7 +44,6 @@ _CACHE_DIR = Path(__file__).resolve().parent.parent / ".rag_cache"
 _CACHE_FILE = _CACHE_DIR / "faiss_index.pkl"
 
 
-# ── Catalog bootstrap ─────────────────────────────────────────────────────────
 
 async def init_catalog() -> None:
     """Load products from DB so chat works immediately without embeddings."""
@@ -72,7 +70,6 @@ def get_product_by_id(pid: int) -> Any | None:
     return None
 
 
-# ── Query intent parsing ──────────────────────────────────────────────────────
 
 def _parse_price(value: str, context: str) -> float:
     num = float(value)
@@ -301,7 +298,6 @@ def _keyword_retrieve(query: str, top_k: int) -> List[Any]:
     return list(_products[:top_k])
 
 
-# ── Embedding providers ───────────────────────────────────────────────────────
 
 def _normalise(vecs: np.ndarray) -> np.ndarray:
     norms = np.linalg.norm(vecs, axis=1, keepdims=True)

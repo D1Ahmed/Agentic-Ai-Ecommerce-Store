@@ -31,12 +31,10 @@ from core.config import (
 from models.schemas import ChatMessage
 from services.rag_service import retrieve, is_ready, init_catalog, get_product_by_id
 
-# ── Groq clients (singletons) ─────────────────────────────────────────────────
 _groq_clients = [Groq(api_key=key, max_retries=0) for key in GROQ_KEYS]
 _current_groq_idx = 0
 
 
-# ── Weather tool ──────────────────────────────────────────────────────────────
 
 _CITY_COORDS = {
     "lahore":     {"lat": 31.5497, "long": 74.3436},
@@ -104,7 +102,6 @@ _GROQ_TOOLS = [
 ]
 
 
-# ── System prompt ─────────────────────────────────────────────────────────────
 
 def _build_system_prompt(inventory_text: str, user_name: str | None = None, current_path: str | None = None, has_store: bool = False, is_authenticated: bool = False, store_collections: list[str] | None = None, product_context_str: str = "") -> str:
     greeting_note = ""
@@ -120,13 +117,16 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
         except:
             pass
             
-    if current_path and "/seller/products/edit/" in current_path:
-        try:
-            prod_id = current_path.split("/")[-1]
-            if prod_id.isdigit():
-                context_note = f"\n[SYSTEM CONTEXT]: The user is currently EDITING Product ID: {prod_id}.{product_context_str} If they ask you to update details (like name, description, category, etc) based on an image they uploaded or their prompt, emit [ACTION:UPDATE_PRODUCT_EDIT:json_string]. The json_string should be a valid minified JSON object containing the keys to update. For example, [ACTION:UPDATE_PRODUCT_EDIT:{{\"description\":\"New description\",\"detailed_description\":\"Longer description...\"}}]. Make sure to ONLY output the action block without code blocks for the JSON. Do NOT ask them for the product ID, assume they are talking about the product they are currently editing.\n"
-        except:
-            pass
+    if current_path and ("/seller/products/edit/" in current_path or "/seller/products/upload" in current_path):
+        if "/seller/products/edit/" in current_path:
+            try:
+                prod_id = current_path.split("/")[-1]
+                if prod_id.isdigit():
+                    context_note = f"\n[SYSTEM CONTEXT]: The user is currently EDITING Product ID: {prod_id}.{product_context_str} If they ask you to update details (like name, description, category, etc) based on an image they uploaded or their prompt, emit [ACTION:UPDATE_PRODUCT_EDIT:json_string]. The json_string should be a valid minified JSON object containing the keys to update. For example, [ACTION:UPDATE_PRODUCT_EDIT:{{\"description\":\"New description\",\"detailed_description\":\"Longer description...\"}}]. Make sure to ONLY output the action block without code blocks for the JSON. Do NOT ask them for the product ID, assume they are talking about the product they are currently editing.\n"
+            except:
+                pass
+        elif "/seller/products/upload" in current_path:
+            context_note = f"\n[SYSTEM CONTEXT]: The user is currently on the Product UPLOAD page. If they ask you to update details (like name, description, detailed_description, category, occasion, etc) based on an image they uploaded or their prompt, emit [ACTION:UPDATE_PRODUCT_UPLOAD:json_string]. The json_string should be a valid minified JSON object containing the keys to update. For example, [ACTION:UPDATE_PRODUCT_UPLOAD:{{\"description\":\"New description\",\"detailed_description\":\"Longer description...\"}}]. Make sure to ONLY output the action block without code blocks for the JSON.\n"
 
     # Build store creation guard rules based on user state
     store_collections_str = ", ".join(store_collections) if store_collections else "None"
@@ -279,7 +279,6 @@ For PREFILL_STORE and CREATE_STORE, do NOT use colons inside field values. Examp
 """
 
 
-# ── Inventory context from RAG ────────────────────────────────────────────────
 
 async def _build_inventory_text(query: str, current_path: str | None = None) -> str:
     products = await retrieve(query)
@@ -331,7 +330,6 @@ async def _build_inventory_text(query: str, current_path: str | None = None) -> 
     return "\n---\n".join(lines)
 
 
-# ── Groq call with tool handling ──────────────────────────────────────────────
 
 def _call_groq(client: Groq, model: str, messages: list) -> str:
     """Single Groq call with tool-call handling. Returns final text."""
@@ -372,7 +370,6 @@ def _call_groq(client: Groq, model: str, messages: list) -> str:
     return second.choices[0].message.content or ""
 
 
-# ── Helper for OpenAI compatible endpoints (DeepSeek, Zen) ────────────────────
 def _call_openai_compatible(api_key: str, base_url: str, model: str, messages: list) -> str:
     """Calls an OpenAI-compatible API endpoint via httpx."""
     # We strip out any tool calls from messages since simple fallbacks might not support them well
@@ -391,7 +388,6 @@ def _call_openai_compatible(api_key: str, base_url: str, model: str, messages: l
     return response.json()["choices"][0]["message"]["content"] or ""
 
 
-# ── Main entry point ──────────────────────────────────────────────────────────
 
 async def run_chat(
     user_message: str,
@@ -428,7 +424,6 @@ async def run_chat(
     used_model = "None"
 
     try:
-        # ── 0. Image processing via Gemini Vision ─────────────────────────────
         if image_data:
             from core.config import GEMINI_API_KEY
             if not GEMINI_API_KEY:
@@ -545,11 +540,9 @@ async def run_chat(
             except Exception as e:
                 print("Error fetching product context:", e)
 
-        # ── 1. RAG retrieval ─────────────────────────────────────────────────
         inventory_text = await _build_inventory_text(user_message, current_path=current_path)
         system_prompt = _build_system_prompt(inventory_text, user_name=user_name, current_path=current_path, has_store=has_store, is_authenticated=is_authenticated, store_collections=store_collections, product_context_str=product_context_str)
 
-        # ── 2. Build message list with conversation history ──────────────────
         messages = [{"role": "system", "content": system_prompt}]
 
         # Inject last 6 turns of history for context
@@ -561,7 +554,6 @@ async def run_chat(
 
         success = False
         
-        # ── 3. Try Groq clients ───────────────────────────────────────────────
         global _current_groq_idx
         num_clients = len(_groq_clients)
         
@@ -582,7 +574,6 @@ async def run_chat(
                 except Exception as e:
                     print(f"[GROQ-{idx}] Failed {model}: {e}")
 
-        # ── 4. Fall back to DeepSeek ─────────────────────────────────────────
         if not success and DEEPSEEK_API_KEY:
             for model in DEEPSEEK_MODELS:
                 try:
@@ -600,7 +591,6 @@ async def run_chat(
                 except Exception as e:
                     print(f"[DEEPSEEK] Failed {model}: {e}")
 
-        # ── 5. Fall back to Zen AI ───────────────────────────────────────────
         if not success and ZEN_API_KEY:
             for model in ZEN_MODELS:
                 try:
@@ -626,7 +616,6 @@ async def run_chat(
         traceback.print_exc()
         print(f"[CHAT] System error: {e}")
 
-    # ── 5. Parse and strip [ACTION:...] tag ──────────────────────────────────
     if text and re.search(r"action:", text, re.IGNORECASE):
         # Broad match: capture everything between [ACTION: and ] (or end of string or XML tag)
         match = re.search(r"\[?ACTION:([^\]<]+)", text, re.IGNORECASE)

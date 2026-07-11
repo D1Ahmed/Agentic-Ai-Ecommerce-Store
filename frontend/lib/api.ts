@@ -80,7 +80,6 @@ export function setGuestCart(items: CartItem[]) {
   else localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
 }
 
-// ── Optimistic cached user (avoids auth flash on load) ────────────────────────
 
 export function getStoredUser(): User | null {
   if (typeof window === "undefined") return null;
@@ -98,7 +97,6 @@ export function setStoredUser(user: User | null) {
   else localStorage.removeItem(STORED_USER_KEY);
 }
 
-// ── Optimistic cached server cart (avoids cart flash on load) ─────────────────
 
 export function getStoredCart(): CartItem[] {
   if (typeof window === "undefined") return [];
@@ -116,7 +114,6 @@ export function setStoredCart(items: CartItem[]) {
   else localStorage.setItem(STORED_CART_KEY, JSON.stringify(items));
 }
 
-// ── Optimistic cached products (avoids skeleton flash on load) ────────────────
 
 export function getStoredProducts(): Product[] {
   if (typeof window === "undefined") return [];
@@ -134,7 +131,6 @@ export function setStoredProducts(products: Product[]) {
   else localStorage.setItem(STORED_PRODUCTS_KEY, JSON.stringify(products));
 }
 
-// ── Products ──────────────────────────────────────────────────────────────────
 
 export async function fetchProducts(): Promise<Product[]> {
   try {
@@ -168,7 +164,6 @@ export async function adminDeleteProduct(id: number): Promise<void> {
   await api.delete(`/products/${id}`);
 }
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
 
 export async function registerUser(data: {
   name: string;
@@ -213,7 +208,6 @@ export async function updateUserProfile(data: {
   return res.data;
 }
 
-// ── Cart ──────────────────────────────────────────────────────────────────────
 
 export async function fetchCart(): Promise<CartItem[]> {
   const res = await api.get<CartItem[]>("/cart");
@@ -230,7 +224,6 @@ export async function syncCart(items: CartItem[]): Promise<CartItem[]> {
   return res.data;
 }
 
-// ── Orders ────────────────────────────────────────────────────────────────────
 
 export async function placeOrder(order: OrderRequest, partial = false): Promise<void> {
   await api.post(`/orders/place-order${partial ? "?partial=true" : ""}`, order);
@@ -240,7 +233,6 @@ export async function clearCart(): Promise<void> {
   await api.delete("/cart");
 }
 
-// ── AI Chat ───────────────────────────────────────────────────────────────────
 
 export interface ChatHistoryMessage {
   role: "user" | "assistant";
@@ -270,7 +262,6 @@ export async function sendChatMessage(
   return res.data;
 }
 
-// ── Store ─────────────────────────────────────────────────────────────────────
 
 export async function registerStore(data: {
   name: string;
@@ -308,7 +299,6 @@ export async function deleteStore(): Promise<void> {
   await api.delete("/store/me");
 }
 
-// ── Seller Collections ───────────────────────────────────────────────────────
 
 export async function createCollection(data: {
   name: string;
@@ -327,7 +317,6 @@ export async function deleteCollection(id: number): Promise<void> {
   await api.delete(`/seller/collections/${id}`);
 }
 
-// ── Seller Products ──────────────────────────────────────────────────────────
 
 export async function uploadProduct(formData: FormData): Promise<any> {
   const res = await api.post("/seller/products", formData, {
@@ -371,7 +360,6 @@ export async function fetchMyProducts(collectionId?: number): Promise<SellerProd
   return res.data;
 }
 
-// ── Reviews & Q&A ────────────────────────────────────────────────────────────
 
 export async function fetchProductReviews(productId: number): Promise<Review[]> {
   const res = await api.get<Review[]>(`/products/${productId}/reviews`);
@@ -425,7 +413,6 @@ export async function deleteReviewComment(reviewId: number): Promise<any> {
   return res.data;
 }
 
-// ── Notifications ────────────────────────────────────────────────────────────
 
 export async function fetchNotifications(): Promise<any[]> {
   const res = await api.get("/notifications");
@@ -437,7 +424,6 @@ export async function markNotificationRead(id: number): Promise<any> {
   return res.data;
 }
 
-// ── View Tracking ────────────────────────────────────────────────────────────
 
 export async function trackProductView(productId: number): Promise<void> {
   try {
@@ -447,7 +433,6 @@ export async function trackProductView(productId: number): Promise<void> {
   }
 }
 
-// ── Store Subscriptions ───────────────────────────────────────────────────────
 
 export async function subscribeToStore(storeId: number): Promise<any> {
   const res = await api.post(`/store/${storeId}/subscribe`);

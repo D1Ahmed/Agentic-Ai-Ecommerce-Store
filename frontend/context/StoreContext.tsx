@@ -41,7 +41,6 @@ import type { Product, CartItem, User, Collection } from "@/types";
 const StoreContext = createContext<any>(null);
 
 export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
-  // ── Optimistic initial state from localStorage ──────────────────────────────
   // Read user and cart from localStorage synchronously on first render.
   // This means the UI shows the correct auth state INSTANTLY with zero flash.
   const cachedUser = getStoredUser();
@@ -749,6 +748,19 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    if (action.startsWith("UPDATE_PRODUCT_UPLOAD:")) {
+      try {
+        const payload = action.replace("UPDATE_PRODUCT_UPLOAD:", "");
+        const data = JSON.parse(payload);
+        setPendingProductUpload((prev: any) => {
+           return { ...prev, ...data };
+        });
+      } catch (e) {
+        console.error("Failed to parse UPDATE_PRODUCT_UPLOAD payload", e);
+      }
+      return;
+    }
+
     if (action === "NAVIGATE_SELLER_DASHBOARD") {
       router.push("/seller/dashboard");
       return;
@@ -789,16 +801,6 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       const collectionNameStr = action.replace("CREATE_AND_NAVIGATE_UPLOAD:", "");
       const name = collectionNameStr.trim();
       if (name) {
-        // Optimistic UI Update - inject fake collection instantly
-        const fakeId = -1000 - Date.now();
-        const fakeCollection = {
-          id: fakeId,
-          name,
-          description: "Creating...",
-          product_count: 0
-        };
-        setOptimisticCollections([fakeCollection]);
-
         Swal.fire({
           icon: 'success',
           title: 'Setting up Collection!',
@@ -807,19 +809,14 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           showConfirmButton: false
         });
 
-        // Navigate to upload page right away
-        router.push(`/seller/products/upload?collection_id=${fakeId}`);
-
-        // Run API in the background
+        // Run API and navigate with real ID
         createCollection({ name })
-          .then(() => {
-            // Once real API succeeds, trigger a refresh to fetch real IDs
+          .then((res: any) => {
             window.dispatchEvent(new Event("refresh_dashboard"));
+            router.push(`/seller/products/upload?collection_id=${res.id}`);
           })
           .catch((err: any) => {
             console.error("Failed to create collection:", err);
-            // Revert optimistic update on failure
-            setOptimisticCollections([]);
             Swal.fire({
               icon: 'error',
               title: 'Oops...',

@@ -3,13 +3,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── Gemini (for embeddings) ───────────────────────────────────────────────────
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
-# ── Cohere (preferred embedding provider — more reliable free tier) ───────────
 COHERE_API_KEY: str = os.getenv("COHERE_API", "")
 
-# ── Groq AI ───────────────────────────────────────────────────────────────────
 raw_groq_keys = os.getenv("GROQ_KEYS", "")
 if raw_groq_keys:
     GROQ_KEYS = [k.strip() for k in raw_groq_keys.split(",") if k.strip()]
@@ -20,7 +17,6 @@ else:
     if os.getenv("GROQ_API_KEY"):
         GROQ_KEYS.append(os.getenv("GROQ_API_KEY", ""))
 
-# ── Zen AI & DeepSeek ─────────────────────────────────────────────────────────
 ZEN_API_KEY: str = os.getenv("ZEN_API", "")
 DEEPSEEK_API_KEY: str = os.getenv("DeepSeek_API", "")
 
@@ -47,7 +43,6 @@ DEEPSEEK_MODELS = [
     "deepseek-chat",
 ]
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
 CORS_ORIGINS = [
     "http://localhost:3000",
     "https://hdwear.vercel.app",
@@ -56,18 +51,14 @@ frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url:
     CORS_ORIGINS.append(frontend_url)
 
-# ── Database ──────────────────────────────────────────────────────────────────
 DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 
-# ── RAG settings ─────────────────────────────────────────────────────────────
 RAG_TOP_K: int = 20          # Default products retrieved per query
 EMBED_MODEL: str = "models/gemini-embedding-001"
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
 AUTH_SECRET: str = os.getenv("AUTH_SECRET", "hdwear-dev-secret-change-in-production")
 SESSION_EXPIRE_DAYS: int = 30
 
-# ── Supabase Storage (for seller image uploads) ──────────────────────────────
 SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://zznakrbijfaxzfoatdzs.supabase.co")
 SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
 SUPABASE_BUCKET: str = "product-images"

@@ -2,7 +2,6 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
 
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
     name: str = Field(min_length=2, max_length=80)
@@ -37,7 +36,6 @@ class AuthResponse(BaseModel):
     user: UserResponse
 
 
-# ── Cart ──────────────────────────────────────────────────────────────────────
 
 class CartSyncItem(BaseModel):
     product_id: int
@@ -50,7 +48,6 @@ class CartSyncRequest(BaseModel):
     items: List[CartSyncItem]
 
 
-# ── Orders ────────────────────────────────────────────────────────────────────
 
 class OrderItem(BaseModel):
     """A single line item in an order."""
@@ -67,7 +64,6 @@ class OrderRequest(BaseModel):
     province: Optional[str] = ""
 
 
-# ── Chat ──────────────────────────────────────────────────────────────────────
 
 class ChatMessage(BaseModel):
     """A single turn in a conversation (user or assistant)."""
@@ -94,7 +90,6 @@ class ChatResponse(BaseModel):
     debug_model: str
 
 
-# ── Store ─────────────────────────────────────────────────────────────────────
 
 class StoreRegisterRequest(BaseModel):
     name: str = Field(min_length=2, max_length=100)
@@ -124,7 +119,6 @@ class StoreResponse(BaseModel):
     is_active: bool = True
 
 
-# ── Collection ────────────────────────────────────────────────────────────────
 
 class CollectionCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=80)
@@ -140,7 +134,6 @@ class CollectionResponse(BaseModel):
     product_count: int = 0
 
 
-# ── Seller Product ────────────────────────────────────────────────────────────
 
 class SellerProductCreate(BaseModel):
     """All the product metadata (images sent separately as multipart)."""
@@ -190,7 +183,6 @@ class ProductSaleToggle(BaseModel):
     sale_percentage: int = Field(default=0, ge=0, le=90)
 
 
-# ── Reviews ───────────────────────────────────────────────────────────────────
 
 class ReviewCreate(BaseModel):
     rating: int = Field(ge=1, le=5)
@@ -214,7 +206,6 @@ class ReplyRequest(BaseModel):
     reply: str = Field(min_length=2)
 
 
-# ── Product Q&A ───────────────────────────────────────────────────────────────
 
 class QuestionCreate(BaseModel):
     question: str = Field(min_length=5)

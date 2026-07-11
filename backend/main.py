@@ -7,7 +7,6 @@ from routers import products, orders, chat, auth, cart, store, seller, reviews, 
 
 import asyncio
 
-# ── Lifespan — build RAG index at startup ─────────────────────────────────────
 
 
 @asynccontextmanager
@@ -26,7 +25,6 @@ async def lifespan(app: FastAPI):
         await global_db.disconnect()
 
 
-# ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="HDwear API",
     description="Backend for the HDwear urban fashion e-commerce platform.",
@@ -34,7 +32,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── Middleware ────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -43,7 +40,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(products.router)
 app.include_router(orders.router)
 app.include_router(chat.router)
@@ -55,7 +51,6 @@ app.include_router(reviews.router)
 app.include_router(notifications.router)
 
 
-# ── Health check ──────────────────────────────────────────────────────────────
 @app.get("/health", tags=["Health"])
 async def health():
     from services.rag_service import is_ready, semantic_ready, _products

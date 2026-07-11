@@ -83,7 +83,6 @@ export default function CartPage() {
 
 
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
 
   const itemHasStockIssue = (item: any) =>
     item.out_of_stock || item.insufficient_stock || item.stock <= 0;
@@ -149,7 +148,6 @@ export default function CartPage() {
     setIsCheckingOut(true);
   };
 
-  // ── Totals (based on effective checkout items) ─────────────────────────────
 
   const rawSubtotal = effectiveCheckoutItems.reduce(
     (sum: number, item: any) => sum + item.price * (item.quantity || 1),
@@ -170,7 +168,6 @@ export default function CartPage() {
   const bagTax = bagSubtotalAfterDiscount * 0.08;
   const bagTotal = bagSubtotalAfterDiscount + bagTax;
 
-  // ── Order handlers ─────────────────────────────────────────────────────────
 
   const handlePlaceOrder = async () => {
     if (isPlacingOrder || effectiveCheckoutItems.length === 0) return;
@@ -225,7 +222,6 @@ export default function CartPage() {
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
@@ -254,7 +250,6 @@ export default function CartPage() {
 
       <main className="max-w-7xl mx-auto px-6 py-12">
         {!isCheckingOut ? (
-          /* ─────────────── BAG VIEW ─────────────── */
           <>
             <h1 className="text-4xl font-black uppercase tracking-tight mb-3 flex items-center gap-4">
               Your Bag{" "}
@@ -290,7 +285,6 @@ export default function CartPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                {/* ── Cart items list ── */}
                 <div className="lg:col-span-2 space-y-5">
                   {cart.map((item: any) => {
                     const outOfStock = itemHasStockIssue(item);
@@ -422,7 +416,6 @@ export default function CartPage() {
                   })}
                 </div>
 
-                {/* ── Order summary ── */}
                 <div className="lg:col-span-1">
                   <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-xl sticky top-28">
                     <h2 className="text-xl font-black uppercase tracking-tight mb-6">
@@ -492,7 +485,6 @@ export default function CartPage() {
             )}
           </>
         ) : (
-          /* ─────────────── BILLING VIEW ─────────────── */
           <div className="max-w-5xl mx-auto space-y-8">
             <div>
               <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
