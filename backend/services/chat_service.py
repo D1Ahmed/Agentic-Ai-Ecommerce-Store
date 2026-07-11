@@ -33,6 +33,7 @@ from services.rag_service import retrieve, is_ready, init_catalog, get_product_b
 
 # ── Groq clients (singletons) ─────────────────────────────────────────────────
 _groq_clients = [Groq(api_key=key, max_retries=0) for key in GROQ_KEYS]
+_current_groq_idx = 0
 
 
 # ── Weather tool ──────────────────────────────────────────────────────────────
@@ -555,15 +556,21 @@ async def run_chat(
         success = False
         
         # ── 3. Try Groq clients ───────────────────────────────────────────────
+        global _current_groq_idx
+        num_clients = len(_groq_clients)
+        
         for model in GROQ_MODELS_PRIMARY:
             if success:
                 break
-            for idx, client in enumerate(_groq_clients):
+            for offset in range(num_clients):
+                idx = (_current_groq_idx + offset) % num_clients
+                client = _groq_clients[idx]
                 try:
                     print(f"[GROQ-{idx}] Trying {model}...")
                     text = _call_groq(client, model, messages)
                     used_model = f"groq-{idx}/{model}"
                     success = True
+                    _current_groq_idx = idx
                     print(f"[GROQ-{idx}] Success: {model}")
                     break
                 except Exception as e:
