@@ -220,8 +220,15 @@ def _matches_filters(p: Any, intent: dict) -> bool:
             return False
     if intent["sub_category"]:
         sc = (p.sub_category or "").lower()
+        c = (p.category or "").lower()
         if sc and sc != intent["sub_category"].lower():
             return False
+        if not sc:
+            req_sc = intent["sub_category"].lower()
+            if req_sc == "shoes" and ("cloth" in c or "shirt" in c or "pant" in c or "bag" in c or "perfume" in c or "watch" in c):
+                return False
+            if req_sc == "clothes" and ("shoe" in c or "boot" in c or "sandal" in c or "bag" in c or "perfume" in c or "watch" in c):
+                return False
     if intent["max_price"] is not None and p.price > intent["max_price"]:
         return False
     if intent["min_price"] is not None and p.price < intent["min_price"]:
@@ -536,13 +543,18 @@ async def retrieve(query: str, top_k: int = RAG_TOP_K) -> List[Any]:
     for i, p in enumerate(filtered):
         k_score_raw = raw_keyword_scores[i]
         k_score_norm = k_score_raw / max_k
-        s_score = semantic_scores.get(p.id, 0.0)
+        is_new = p.id not in semantic_scores
         
         if not semantic_scores:
             final_score = k_score_raw
         else:
-            # Heavy weighting to exact matches + semantic understanding
-            final_score = (s_score * 0.7) + (k_score_norm * 0.4) 
+            if is_new and k_score_norm > 0:
+                # Synthesize a high semantic score for new items so they aren't penalized
+                synthetic_s_score = max(0.8, k_score_norm)
+                final_score = (synthetic_s_score * 0.7) + (k_score_norm * 0.6)
+            else:
+                s_score = semantic_scores.get(p.id, 0.0)
+                final_score = (s_score * 0.7) + (k_score_norm * 0.4) 
             
         if final_score > 0 or intent["browse_all"]:
             scored.append((final_score, p))
