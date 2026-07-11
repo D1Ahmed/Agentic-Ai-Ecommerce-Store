@@ -75,7 +75,8 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9; /* slate-100 */
+  background: rgba(15, 23, 42, 0.08); /* Transparent, slightly darker glossy tone */
+  border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -89,6 +90,6 @@ body {
 
 /* For Firefox */
 * {
-  scrollbar-color: #2563eb #f1f5f9;
+  scrollbar-color: #2563eb rgba(15, 23, 42, 0.08);
   scrollbar-width: thin;
 }
