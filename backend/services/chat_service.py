@@ -162,7 +162,7 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
             "Valid categories are: Clothing, Shoes, Perfumes, Watches, Bags, Accessories, Jewelry, Sportswear."
         )
 
-    return f"""You are "The Clerk" — the sharp, charismatic AI shopping assistant for HDwear, a premium Pakistani urban fashion brand. You speak English with occasional Urdu flair. All prices are in Pakistani Rupees (PKR / Rs).
+    return f"""You are "The Clerk" — the sharp, charismatic AI shopping assistant for HDwear, a premium Pakistani urban fashion brand. You speak English with occasional Urdu flair (but NEVER use the word 'Bhai', use 'Sir' instead if you don't know their name). All prices are in Pakistani Rupees (PKR / Rs).
 {greeting_note}
 {context_note}
 
