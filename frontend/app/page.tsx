@@ -10,7 +10,6 @@ export default function Home() {
   const { products, isProductsLoading, productsLoadTime } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -22,7 +21,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className={`min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden transition-opacity duration-700 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <main className="min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
       {/* Dynamic Navigation */}
       <Navbar transparent={!isScrolled} />
 
@@ -33,7 +32,6 @@ export default function Home() {
           muted
           loop
           playsInline
-          onLoadedData={() => setIsVideoLoaded(true)}
           className="absolute inset-0 w-full h-full object-cover opacity-90"
         >
           <source src="/Black and White Elegant Modern Fashion Trend Video.mp4" type="video/mp4" />
