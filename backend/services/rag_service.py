@@ -36,6 +36,7 @@ from services.product_service import get_all_products
 
 # ── Globals ───────────────────────────────────────────────────────────────────
 _index: Any = None
+_faiss_products: List[Any] = []
 _products: List[Any] = []
 _is_building = False
 _catalog_ready = False
@@ -109,9 +110,9 @@ def _parse_query_intent(query: str) -> dict:
     elif re.search(r"\b(summer)\b", q):
         intent["season"] = "Summer"
 
-    if re.search(r"\b(shoe|shoes|sandal|heel|heels|sneaker|footwear|boot|boots|loafer|chappal|slipper)\b", q):
+    if re.search(r"\b(shoe|shoes|sandal|sandals|heel|heels|sneaker|sneakers|footwear|boot|boots|loafer|loafers|chappal|chappals|slipper|slippers)\b", q):
         intent["sub_category"] = "Shoes"
-    elif re.search(r"\b(cloth|clothes|clothing|shirt|tee|t-shirt|jacket|pant|pants|short|shorts|dress|outfit|wear|coat|sweater|hoodie|blouse|skirt|trench)\b", q):
+    elif re.search(r"\b(cloth|clothes|clothing|shirt|shirts|tee|tees|t-shirt|t-shirts|jacket|jackets|pant|pants|short|shorts|dress|dresses|outfit|outfits|wear|coat|coats|sweater|sweaters|hoodie|hoodies|blouse|skirt|skirts|trench)\b", q):
         intent["sub_category"] = "Clothes"
     elif re.search(r"\b(perfume|fragrance|cologne|scent|spray)\b", q):
         intent["sub_category"] = "Perfumes"
@@ -218,8 +219,20 @@ def _matches_filters(p: Any, intent: dict) -> bool:
         if s and s != intent["season"].lower() and s != "all season":
             return False
     if intent["sub_category"]:
+        req_cat = intent["sub_category"].lower()
+        c = (p.category or "").lower()
         sc = (p.sub_category or "").lower()
-        if sc and sc != intent["sub_category"].lower():
+        combined = c + " " + sc
+        
+        if req_cat == "shoes" and not any(x in combined for x in ["shoe", "footwear", "boot", "sandal", "chappal", "sneaker", "heel", "loafer", "slipper"]):
+            return False
+        if req_cat == "clothes" and not any(x in combined for x in ["cloth", "shirt", "pant", "jacket", "coat", "sweater", "hoodie", "dress", "skirt", "wear", "apparel"]):
+            return False
+        if req_cat == "perfumes" and not any(x in combined for x in ["perfume", "fragrance", "scent", "spray", "cologne"]):
+            return False
+        if req_cat == "watches" and not any(x in combined for x in ["watch", "timepiece"]):
+            return False
+        if req_cat == "bags" and not any(x in combined for x in ["bag", "purse", "backpack", "tote", "handbag"]):
             return False
     if intent["max_price"] is not None and p.price > intent["max_price"]:
         return False
@@ -383,9 +396,10 @@ def _load_cache() -> bool:
         dim = matrix.shape[1]
         idx = faiss.IndexFlatIP(dim)
         idx.add(matrix)
+        global _faiss_products
         _index = idx
-        _products = ordered_products
-        print(f"[RAG] Loaded cached semantic index ({len(_products)} products)")
+        _faiss_products = ordered_products
+        print(f"[RAG] Loaded cached semantic index ({len(_faiss_products)} products)")
         return True
     except Exception as exc:
         print(f"[RAG] Cache load failed: {exc}")
@@ -394,7 +408,7 @@ def _load_cache() -> bool:
 
 async def build_index() -> None:
     """Build FAISS index in the background. Chat works without this."""
-    global _index, _is_building
+    global _index, _is_building, _faiss_products
 
     if _is_building or faiss is None:
         if faiss is None:
@@ -412,8 +426,9 @@ async def build_index() -> None:
 
     _is_building = True
     try:
+        current_products = list(_products)
         print("[RAG] Building semantic index (background)...")
-        docs = [_product_to_document(p) for p in _products]
+        docs = [_product_to_document(p) for p in current_products]
         all_vecs: List[np.ndarray] = []
         batch_size = 5
 
@@ -444,8 +459,9 @@ async def build_index() -> None:
         idx = faiss.IndexFlatIP(dim)
         idx.add(matrix)
         _index = idx
-        _save_cache(matrix, [p.id for p in _products])
-        print(f"[RAG] Semantic index ready: {len(_products)} products, dim={dim}")
+        _faiss_products = current_products
+        _save_cache(matrix, [p.id for p in current_products])
+        print(f"[RAG] Semantic index ready: {len(current_products)} products, dim={dim}")
 
     finally:
         _is_building = False
@@ -453,8 +469,6 @@ async def build_index() -> None:
 
 async def refresh_index() -> None:
     """Reload catalogue after stock changes; rebuild embeddings in background."""
-    global _index
-    _index = None
     if _CACHE_FILE.exists():
         try:
             _CACHE_FILE.unlink()
@@ -464,9 +478,10 @@ async def refresh_index() -> None:
     asyncio.create_task(build_index())
 
 
-def _semantic_retrieve(query: str, top_k: int) -> List[Any]:
-    if _index is None or not _products:
-        return []
+def _get_semantic_scores(query: str) -> dict:
+    """Returns a dict mapping product ID to semantic score."""
+    if _index is None or not _faiss_products:
+        return {}
 
     qvec = None
     for provider in ("cohere", "gemini"):
@@ -478,16 +493,22 @@ def _semantic_retrieve(query: str, top_k: int) -> List[Any]:
             break
 
     if qvec is None:
-        raise RuntimeError("Query embedding unavailable")
+        return {}
 
-    scores, indices = _index.search(qvec, min(top_k, len(_products)))
-    return [_products[i] for i in indices[0] if 0 <= i < len(_products)]
+    scores, indices = _index.search(qvec, len(_faiss_products))
+    
+    score_map = {}
+    for score, idx in zip(scores[0], indices[0]):
+        if 0 <= idx < len(_faiss_products):
+            score_map[_faiss_products[idx].id] = float(score)
+            
+    return score_map
 
 
 async def retrieve(query: str, top_k: int = RAG_TOP_K) -> List[Any]:
     """
     Return the most relevant products for a user query.
-    Uses semantic search when available, otherwise smart keyword/filter search.
+    Uses True Hybrid Search: semantic search blended with strict keyword filtering.
     """
     if not _products:
         await init_catalog()
@@ -495,12 +516,53 @@ async def retrieve(query: str, top_k: int = RAG_TOP_K) -> List[Any]:
     intent = _parse_query_intent(query)
     limit = 50 if intent["browse_all"] else top_k
 
-    if _index is not None:
-        try:
-            semantic = _semantic_retrieve(query, limit)
-            if semantic:
-                return semantic
-        except Exception as exc:
-            print(f"[RAG] Semantic retrieve fallback: {exc}")
+    # 1. Strict Filters
+    has_filters = any(
+        intent[k] is not None and intent[k] is not False
+        for k in ("gender", "season", "sub_category", "max_price", "min_price", "on_sale", "material", "style", "occasion")
+    )
 
-    return _keyword_retrieve(query, limit)
+    filtered = []
+    for p in _products:
+        if has_filters and not _matches_filters(p, intent):
+            continue
+        filtered.append(p)
+        
+    if not filtered:
+        return []
+
+    # 2. Get Semantic Scores
+    semantic_scores = {}
+    try:
+        semantic_scores = _get_semantic_scores(query)
+    except Exception as exc:
+        print(f"[RAG] Semantic search failed: {exc}")
+
+    # 3. Hybrid Score Blend
+    scored = []
+    raw_keyword_scores = [_keyword_score(p, query) for p in filtered]
+    max_k = max(raw_keyword_scores) if raw_keyword_scores else 1.0
+    if max_k == 0:
+        max_k = 1.0
+
+    for i, p in enumerate(filtered):
+        k_score_raw = raw_keyword_scores[i]
+        k_score_norm = k_score_raw / max_k
+        is_new = p.id not in semantic_scores
+        
+        if not semantic_scores:
+            final_score = k_score_raw
+        else:
+            if is_new:
+                # If it's new, we don't have a semantic score, so we scale the keyword score
+                # to aggressively compete with the 1.0 max semantic score, but ONLY if the keyword match is good.
+                final_score = k_score_norm * 1.3
+            else:
+                s_score = semantic_scores.get(p.id, 0.0)
+                final_score = (s_score * 0.7) + (k_score_norm * 0.4) 
+            
+        if final_score > 0 or intent["browse_all"]:
+            scored.append((final_score, p))
+            
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [p for _, p in scored[:limit]]

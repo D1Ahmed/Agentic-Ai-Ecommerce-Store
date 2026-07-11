@@ -656,6 +656,26 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    if (action === "NAVIGATE_HOME") {
+      router.push("/");
+      return;
+    }
+
+    if (action === "NAVIGATE_CART") {
+      router.push("/cart");
+      return;
+    }
+
+    if (action === "NAVIGATE_SHOES") {
+      router.push("/shoes");
+      return;
+    }
+
+    if (action === "NAVIGATE_SALES" || action === "NAVIGATE_SALE") {
+      router.push("/sale");
+      return;
+    }
+
     if (action === "NAVIGATE_STORE_REGISTER") {
       router.push("/seller/register");
       return;
