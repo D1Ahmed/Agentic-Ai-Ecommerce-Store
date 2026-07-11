@@ -34,11 +34,31 @@ export default function Home() {
           playsInline
           className="absolute inset-0 w-full h-full object-cover opacity-90"
         >
-          <source src="/hero-video.mp4" type="video/mp4" />
+          <source src="/Black and White Elegant Modern Fashion Trend Video.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
 
-        <div className="relative z-10 p-12 pb-48 animate-in fade-in zoom-in duration-1000">
+        {/* Dynamic Text Overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-4 md:pb-3 text-white pointer-events-none z-10 select-none">
+
+          <div className="relative flex flex-col items-center w-full max-w-7xl px-4">
+            {/* Cursive text */}
+            <div className="relative animate-blur-fade-in z-20 translate-y-2 md:translate-y-1" style={{ animationDelay: '0.5s' }}>
+              {/* Change fontWeight from 100 (thinnest) to 900 (thickest) */}
+              <h2 className="font-modernline text-3xl md:text-7xl lg:text-[5rem] text-center" style={{ fontWeight: 50, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                discover the
+              </h2>
+            </div>
+
+            {/* Serif text */}
+            <h1 className="font-brown-sugar text-6xl md:text-8xl lg:text-[11rem] font-normal uppercase text-center animate-blur-fade-in leading-none z-10" style={{ animationDelay: '2s', textShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
+              Fashion Trend
+            </h1>
+          </div>
+
+        </div>
+
+        <div className="relative z-20 p-12 pb-48 animate-in fade-in zoom-in duration-1000" style={{ animationDelay: '2s', animationFillMode: 'both' }}>
           <Link href="#collections">
             <button className="group flex items-center gap-4 bg-transparent backdrop-blur-sm border border-white/30 text-white px-8 py-4 rounded-full font-black uppercase text-[10px] tracking-[0.3em] hover:bg-white hover:text-black hover:border-white transition-all duration-500 shadow-2xl">
               Explore Collections
