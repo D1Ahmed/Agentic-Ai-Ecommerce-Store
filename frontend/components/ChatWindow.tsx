@@ -220,6 +220,19 @@ export default function ChatWindow() {
             ]
           }
         ]);
+      } else if (action && action.startsWith("ASK_ADD_TO_CART:")) {
+        const productId = action.replace("ASK_ADD_TO_CART:", "");
+        setMessages((prev) => [
+          ...prev, 
+          { 
+            role: "ai", 
+            text: text,
+            buttons: [
+              { label: "Yes, add to cart", action: `ADD_TO_CART:${productId}:1:false`, msg: "Yes, please add it to my cart.", color: "blue" },
+              { label: "No thanks", action: "NONE", msg: "No, thanks." }
+            ]
+          }
+        ]);
       } else if (action && action.startsWith("CREATE_COLLECTIONS:")) {
         const collectionNamesStr = action.replace("CREATE_COLLECTIONS:", "");
         const names = collectionNamesStr.split(",").map(n => n.trim()).filter(Boolean);
