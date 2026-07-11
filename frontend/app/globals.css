@@ -75,8 +75,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.08); /* Transparent, slightly darker glossy tone */
-  border-radius: 5px;
+  background: transparent; /* Fully transparent glossy track */
 }
 
 ::-webkit-scrollbar-thumb {
@@ -90,6 +89,6 @@ body {
 
 /* For Firefox */
 * {
-  scrollbar-color: #2563eb rgba(15, 23, 42, 0.08);
+  scrollbar-color: #2563eb transparent;
   scrollbar-width: thin;
 }
