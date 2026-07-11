@@ -24,7 +24,6 @@ model Product {
   rating               Float            @default(0)
   reviews_count        Int              @default(0)
 
-  // ── Seller / Store fields ──────────────────────────────────────────────────
   store_id             Int?
   collection_id        Int?
   is_on_sale           Boolean          @default(false)
@@ -39,7 +38,6 @@ model Product {
   color_options        String?          // JSON array string: ["Red", "Blue"]
   created_at           DateTime         @default(now())
 
-  // ── Relations ──────────────────────────────────────────────────────────────
   store                Store?           @relation(fields: [store_id], references: [id], onDelete: SetNull)
   collection           Collection?      @relation(fields: [collection_id], references: [id], onDelete: SetNull)
   images               ProductImage[]
@@ -117,7 +115,6 @@ model OrderItem {
   product        Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 }
 
-// ── Store / Seller System ────────────────────────────────────────────────────
 
 model Store {
   id            Int            @id @default(autoincrement())

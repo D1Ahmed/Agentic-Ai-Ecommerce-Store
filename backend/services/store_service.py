@@ -15,7 +15,6 @@ from services.notification_service import create_notification
 from services.product_service import clear_products_cache
 
 
-# ── Store Registration ────────────────────────────────────────────────────────
 
 async def create_store(
     owner_id: int,
@@ -102,7 +101,6 @@ async def delete_store(store_id: int, owner_id: int) -> None:
             data={"role": "customer"}
         )
 
-# ── Collections ───────────────────────────────────────────────────────────────
 
 async def create_collection(store_id: int, name: str, description: Optional[str] = None) -> Any:
     async with get_db() as db:
@@ -145,7 +143,6 @@ async def delete_collection(collection_id: int, store_id: int) -> None:
         await db.collection.delete(where={"id": collection_id})
 
 
-# ── Image Upload to Supabase Storage ─────────────────────────────────────────
 
 async def upload_image_to_supabase(
     file_content: bytes,
@@ -211,7 +208,6 @@ async def delete_image_from_supabase(image_url: str) -> None:
             print(f"[STORE] Image delete warning: {resp.status_code}")
 
 
-# ── Seller Products ───────────────────────────────────────────────────────────
 
 async def create_seller_product(store_id: int, data: Dict[str, Any]) -> Any:
     """Create a product linked to a store."""
@@ -470,7 +466,6 @@ async def delete_review_comment(review_id: int, store_id: int) -> Any:
             data={"is_deleted": True, "body": "", "reply": None}
         )
 
-# ── Store Subscriptions ───────────────────────────────────────────────────────
 
 async def subscribe_store(user_id: int, store_id: int) -> dict:
     async with get_db() as db:

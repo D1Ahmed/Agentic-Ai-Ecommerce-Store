@@ -287,7 +287,6 @@ export default function ChatWindow() {
     }
   };
 
-  // ── Quick action chips ──────────────────────────────────────────────────────
   const quickActions = [
     { label: "Summer clothes", msg: "Show me summer clothes" },
     { label: "Winter jackets", msg: "Show me winter jackets for men" },
@@ -297,7 +296,6 @@ export default function ChatWindow() {
 
   return (
     <AnimatePresence>
-      {/* ── Floating bubble ─────────────────────────────────────────────────── */}
       {!isChatOpen ? (
         <motion.button
           key="bubble"

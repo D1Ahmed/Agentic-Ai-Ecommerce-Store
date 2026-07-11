@@ -77,7 +77,6 @@ export interface ChatResponse {
   debug_model: string;
 }
 
-// ── Store & Seller ──────────────────────────────────────────────────────────
 
 export interface Store {
   id: number;

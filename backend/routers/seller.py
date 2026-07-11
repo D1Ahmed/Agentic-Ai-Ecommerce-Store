@@ -47,7 +47,6 @@ async def _require_store(user):
     return store
 
 
-# ── Collections ───────────────────────────────────────────────────────────────
 
 @router.post("/collections")
 async def create_new_collection(body: CollectionCreateRequest, user=Depends(get_current_user)):
@@ -93,7 +92,6 @@ async def remove_collection(collection_id: int, user=Depends(get_current_user)):
     return {"status": "deleted"}
 
 
-# ── Products ──────────────────────────────────────────────────────────────────
 
 @router.post("/products")
 async def upload_product(
@@ -341,7 +339,6 @@ async def list_my_products(
     ]
 
 
-# ── Notifications (Q&A) ──────────────────────────────────────────────────────
 
 @router.get("/notifications")
 async def get_notifications(user=Depends(get_current_user)):
