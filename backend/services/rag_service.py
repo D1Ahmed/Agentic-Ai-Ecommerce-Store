@@ -396,7 +396,7 @@ def _load_cache() -> bool:
 
 async def build_index() -> None:
     """Build FAISS index in the background. Chat works without this."""
-    global _index, _is_building
+    global _index, _is_building, _faiss_products
 
     if _is_building or faiss is None:
         if faiss is None:
@@ -446,7 +446,6 @@ async def build_index() -> None:
         dim = matrix.shape[1]
         idx = faiss.IndexFlatIP(dim)
         idx.add(matrix)
-        global _index, _faiss_products
         _index = idx
         _faiss_products = current_products
         _save_cache(matrix, [p.id for p in current_products])
