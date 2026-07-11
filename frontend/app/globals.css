@@ -75,7 +75,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9; /* slate-100 */
+  background: #2b2b2b; /* Chrome's native dark mode track grey */
 }
 
 ::-webkit-scrollbar-thumb {
@@ -89,6 +89,6 @@ body {
 
 /* For Firefox */
 * {
-  scrollbar-color: #2563eb #f1f5f9;
+  scrollbar-color: #2563eb #2b2b2b;
   scrollbar-width: thin;
 }
