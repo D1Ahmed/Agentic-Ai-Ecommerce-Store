@@ -561,8 +561,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (action.startsWith("SHOW_RESULTS:")) {
-      const ids = action
-        .replace("SHOW_RESULTS:", "")
+      const idString = action.replace("SHOW_RESULTS:", "").trim();
+      if (!idString) return; // Prevent empty crash
+      const ids = idString
         .split(",")
         .map((id) => parseInt(id.trim()));
       setAiSearchResults(products.filter((p) => ids.includes(p.id)));
