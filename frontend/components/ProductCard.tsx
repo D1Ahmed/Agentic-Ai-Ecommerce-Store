@@ -108,7 +108,7 @@ export default function ProductCard({ product }: { product: any }) {
 
         <div className="p-6">
           <div className="flex justify-between items-start gap-3 mb-2">
-            <h3 className="font-black text-base uppercase tracking-tighter leading-snug group-hover:text-blue-600 transition-colors flex-1 min-w-0">
+            <h3 className="font-black text-base text-slate-900 uppercase tracking-tighter leading-snug group-hover:text-blue-600 transition-colors flex-1 min-w-0">
               {product.name}
             </h3>
             <div className="flex flex-col items-end">
