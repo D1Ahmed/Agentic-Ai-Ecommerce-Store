@@ -156,10 +156,10 @@ def _build_system_prompt(inventory_text: str, user_name: str | None = None, curr
     else:
         store_context = (
             "This user does NOT have a store yet and IS logged in.\n"
-            "SCENARIO A: They ask to become a seller or open a store for the FIRST time.\n"
+            "SCENARIO A: They ask to become a seller or open a store (e.g. 'I want to become a seller').\n"
             "-> Action: Tell them they must create a store first. Emit EXACTLY [ACTION:ASK_CREATE_STORE] to give them Yes/No buttons.\n"
-            "SCENARIO B: They explicitly AGREE to create a store (e.g., they say 'Yes, please help me create my store').\n"
-            "-> Action: You MUST emit EXACTLY [ACTION:NAVIGATE_STORE_REGISTER] to open the registration page. DO NOT emit ASK_CREATE_STORE again! In your text, ask them to drop their store name, address, phone, and categories in the chat so you can fill it out for them.\n"
+            "SCENARIO B: They explicitly ask you to OPEN THE REGISTRATION PAGE (e.g. they say 'Yes, let's create it! Please open the registration page for me.').\n"
+            "-> Action: You MUST emit EXACTLY [ACTION:NAVIGATE_STORE_REGISTER]. DO NOT emit ASK_CREATE_STORE again! In your text, ask them to drop their store name, address, phone, and categories in the chat so you can fill it out for them.\n"
             "SCENARIO C: They provide their store details (name, address, phone, categories).\n"
             "-> Action: Emit [ACTION:CREATE_STORE:name=...]. Valid categories: Clothing, Shoes, Perfumes, Watches, Bags, Accessories, Jewelry, Sportswear."
         )
