@@ -34,7 +34,7 @@ To truly understand the power of the agentic architecture, here are two step-by-
 
 ### Workflow A: "Add this product to the cart"
 
-    When a user is viewing a product page (e.g., a Black Hoodie) and types "please add this to my cart", the system executes a precise orchestration:
+When a user is viewing a product page (e.g., a Black Hoodie) and types "please add this to my cart", the system executes a precise orchestration:
 
 - Context Injection (Frontend -> Backend): The frontend sends a POST /ai/chat request containing the user's message, but it also silently attaches the current UI state (current_path="/collections/203").
 - RAG Override (chat_service.py): The backend detects the user is on a specific product page. It forcefully injects Product ID 203 into the RAG inventory context so the LLM explicitly knows what the word "this" refers to.
