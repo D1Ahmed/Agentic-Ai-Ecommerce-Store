@@ -215,7 +215,7 @@ export default function ChatWindow() {
             role: "ai", 
             text: text || "You need a store first to upload products! Would you like me to help you create one right now?",
             buttons: [
-              { label: "Yes, create my store", action: "SEND_TO_AI", msg: "Yes, please help me create my store.", color: "blue" },
+              { label: "Yes, create my store", action: "SEND_TO_AI", msg: "Yes, let's create it! Please open the registration page for me.", color: "blue" },
               { label: "No, maybe later", action: "SEND_TO_AI", msg: "No, maybe later." }
             ]
           }
