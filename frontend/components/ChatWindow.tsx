@@ -461,7 +461,11 @@ export default function ChatWindow() {
                             <button
                               key={idx}
                               onClick={() => {
-                                setMessages(prev => [...prev, { role: "user", text: btn.msg }]);
+                                // Only append manually if the action won't simulate a chat send
+                                if (btn.action !== "TRIGGER_IMAGE_ANALYSIS" && btn.action !== "SEND_TO_AI") {
+                                  setMessages(prev => [...prev, { role: "user", text: btn.msg }]);
+                                }
+                                
                                 if (btn.action === "TRIGGER_IMAGE_ANALYSIS") {
                                   const files = (window as any).__pendingAnalysisFiles || [];
                                   if (files.length > 0) {
