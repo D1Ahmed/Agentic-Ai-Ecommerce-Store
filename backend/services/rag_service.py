@@ -110,9 +110,9 @@ def _parse_query_intent(query: str) -> dict:
     elif re.search(r"\b(summer)\b", q):
         intent["season"] = "Summer"
 
-    if re.search(r"\b(shoe|shoes|sandal|heel|heels|sneaker|footwear|boot|boots|loafer|chappal|slipper)\b", q):
+    if re.search(r"\b(shoe|shoes|sandal|sandals|heel|heels|sneaker|sneakers|footwear|boot|boots|loafer|loafers|chappal|chappals|slipper|slippers)\b", q):
         intent["sub_category"] = "Shoes"
-    elif re.search(r"\b(cloth|clothes|clothing|shirt|tee|t-shirt|jacket|pant|pants|short|shorts|dress|outfit|wear|coat|sweater|hoodie|blouse|skirt|trench)\b", q):
+    elif re.search(r"\b(cloth|clothes|clothing|shirt|shirts|tee|tees|t-shirt|t-shirts|jacket|jackets|pant|pants|short|shorts|dress|dresses|outfit|outfits|wear|coat|coats|sweater|sweaters|hoodie|hoodies|blouse|skirt|skirts|trench)\b", q):
         intent["sub_category"] = "Clothes"
     elif re.search(r"\b(perfume|fragrance|cologne|scent|spray)\b", q):
         intent["sub_category"] = "Perfumes"
@@ -219,16 +219,21 @@ def _matches_filters(p: Any, intent: dict) -> bool:
         if s and s != intent["season"].lower() and s != "all season":
             return False
     if intent["sub_category"]:
-        sc = (p.sub_category or "").lower()
+        req_cat = intent["sub_category"].lower()
         c = (p.category or "").lower()
-        if sc and sc != intent["sub_category"].lower():
+        sc = (p.sub_category or "").lower()
+        combined = c + " " + sc
+        
+        if req_cat == "shoes" and not any(x in combined for x in ["shoe", "footwear", "boot", "sandal", "chappal", "sneaker", "heel", "loafer", "slipper"]):
             return False
-        if not sc:
-            req_sc = intent["sub_category"].lower()
-            if req_sc == "shoes" and ("cloth" in c or "shirt" in c or "pant" in c or "bag" in c or "perfume" in c or "watch" in c):
-                return False
-            if req_sc == "clothes" and ("shoe" in c or "boot" in c or "sandal" in c or "bag" in c or "perfume" in c or "watch" in c):
-                return False
+        if req_cat == "clothes" and not any(x in combined for x in ["cloth", "shirt", "pant", "jacket", "coat", "sweater", "hoodie", "dress", "skirt", "wear", "apparel"]):
+            return False
+        if req_cat == "perfumes" and not any(x in combined for x in ["perfume", "fragrance", "scent", "spray", "cologne"]):
+            return False
+        if req_cat == "watches" and not any(x in combined for x in ["watch", "timepiece"]):
+            return False
+        if req_cat == "bags" and not any(x in combined for x in ["bag", "purse", "backpack", "tote", "handbag"]):
+            return False
     if intent["max_price"] is not None and p.price > intent["max_price"]:
         return False
     if intent["min_price"] is not None and p.price < intent["min_price"]:
@@ -548,10 +553,10 @@ async def retrieve(query: str, top_k: int = RAG_TOP_K) -> List[Any]:
         if not semantic_scores:
             final_score = k_score_raw
         else:
-            if is_new and k_score_norm > 0:
-                # Synthesize a high semantic score for new items so they aren't penalized
-                synthetic_s_score = max(0.8, k_score_norm)
-                final_score = (synthetic_s_score * 0.7) + (k_score_norm * 0.6)
+            if is_new:
+                # If it's new, we don't have a semantic score, so we scale the keyword score
+                # to aggressively compete with the 1.0 max semantic score, but ONLY if the keyword match is good.
+                final_score = k_score_norm * 1.3
             else:
                 s_score = semantic_scores.get(p.id, 0.0)
                 final_score = (s_score * 0.7) + (k_score_norm * 0.4) 
