@@ -68,3 +68,27 @@ body {
     animation: blur-fade-in 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 }
+
+/* Custom Blue Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9; /* slate-100 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2563eb; /* blue-600 */
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1d4ed8; /* blue-700 */
+}
+
+/* For Firefox */
+* {
+  scrollbar-color: #2563eb #f1f5f9;
+  scrollbar-width: thin;
+}
