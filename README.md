@@ -1,4 +1,5 @@
 # HDwear Project Documentation
+Video Demo of project: https://www.linkedin.com/posts/dawoodahmedjavid_softwareengineering-artificialintelligence-ugcPost-7481855638805925888-Q_c_/?utm_source=share&utm_medium=member_desktop&rcm=ACoAAD3MTW8BBEq5KJ4gGeXksLbV9aQNxxrVazI
 
 > This document outlines the architecture, motivation, and technical implementation of the HDwear AI-powered e-commerce platform. It focuses heavily on the underlying agentic system, retrieval-augmented generation (RAG) pipeline, and backend design decisions.
 
