@@ -1,5 +1,4 @@
 # HDwear Project Documentation
-Video Demo of project: https://www.linkedin.com/posts/dawoodahmedjavid_softwareengineering-artificialintelligence-ugcPost-7481855638805925888-Q_c_/?utm_source=share&utm_medium=member_desktop&rcm=ACoAAD3MTW8BBEq5KJ4gGeXksLbV9aQNxxrVazI
 
 > This document outlines the architecture, motivation, and technical implementation of the HDwear AI-powered e-commerce platform. It focuses heavily on the underlying agentic system, retrieval-augmented generation (RAG) pipeline, and backend design decisions.
 
@@ -134,3 +133,5 @@ Based on recent system profiling and API dashboard logs, the architecture handle
 - **Action Parsing Reliability:** The custom tag extraction logic is highly reliable. Frontend logs show seamless parsing of complex tags (e.g., `ADD_TO_CART:203:1:1`, `NAVIGATE_SELLER_DASHBOARD`) which are successfully intercepted and executed by the UI handler with a deliberate 400ms queuing delay for visual smoothness.
 
 The Groq API dashboard logs reveal frequent `429 Rate limit exceeded` errors on the free tier. This real-world data perfectly validates the necessity of the multi-key rotation and multi-provider fallback architecture (DeepSeek/Zen AI) implemented in `chat_service.py` to maintain a stable user experience.
+
+Video Demo of project: https://www.linkedin.com/posts/dawoodahmedjavid_softwareengineering-artificialintelligence-ugcPost-7481855638805925888-Q_c_/?utm_source=share&utm_medium=member_desktop&rcm=ACoAAD3MTW8BBEq5KJ4gGeXksLbV9aQNxxrVazI
