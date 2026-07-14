@@ -100,6 +100,7 @@ export default function UserManagement() {
               <th className="px-6 py-4">Name</th>
               <th className="px-6 py-4">Email</th>
               <th className="px-6 py-4">Role</th>
+              <th className="px-6 py-4">Last Active</th>
               <th className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
@@ -136,6 +137,15 @@ export default function UserManagement() {
                         </span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-500">
+                    {u.last_active ? (
+                      <span title={new Date(u.last_active).toLocaleString()}>
+                        {new Date(u.last_active).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      "Never"
+                    )}
                   </td>
                   <td className="px-6 py-4 text-right">
                     {u.role !== "admin" && (

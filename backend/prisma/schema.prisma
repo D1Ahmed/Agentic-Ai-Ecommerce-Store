@@ -58,6 +58,7 @@ model User {
   role          String           @default("customer")
   created_at    DateTime         @default(now())
   updated_at    DateTime         @updatedAt
+  last_active   DateTime         @default(now())
   sessions      Session[]
   cartItems     UserCartItem[]
   orders        Order[]

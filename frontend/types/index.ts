@@ -53,6 +53,7 @@ export interface User {
   phone_number?: string;
   role?: string;
   has_store?: boolean;
+  last_active?: string;
 }
 
 export interface AuthResponse {

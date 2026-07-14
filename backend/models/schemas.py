@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
+from datetime import datetime
 
 
 
@@ -22,6 +23,7 @@ class UserResponse(BaseModel):
     phone_number: Optional[str] = None
     role: str = "customer"
     has_store: bool = False
+    last_active: Optional[datetime] = None
 
 class GoogleLoginRequest(BaseModel):
     credential: str

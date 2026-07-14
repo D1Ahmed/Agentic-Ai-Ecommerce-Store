@@ -50,6 +50,7 @@ async def get_users(admin: Any = Depends(get_current_admin)):
                 address=u.address,
                 phone_number=u.phone_number,
                 has_store=True if u.store or u.role == "seller" else False,
+                last_active=getattr(u, "last_active", None),
             )
             for u in users
         ]

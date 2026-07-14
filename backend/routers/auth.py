@@ -16,6 +16,7 @@ def _user_response(user, has_store: bool = False) -> UserResponse:
         phone_number=user.phone_number,
         role=getattr(user, "role", "customer"),
         has_store=has_store,
+        last_active=getattr(user, "last_active", None),
     )
 
 
@@ -56,6 +57,13 @@ async def logout(authorization: str = Header(None)):
 
 @router.get("/me", response_model=UserResponse)
 async def me(user=Depends(get_current_user)):
+    from db.client import get_db
+    from datetime import datetime, timezone
+    async with get_db() as db:
+        user = await db.user.update(
+            where={"id": user.id},
+            data={"last_active": datetime.now(timezone.utc)}
+        )
     has_store = await _check_has_store(user.id)
     return _user_response(user, has_store=has_store)
 
