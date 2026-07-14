@@ -161,7 +161,7 @@ model ProductImage {
 model Review {
   id            Int            @id @default(autoincrement())
   product_id    Int
-  user_id       Int
+  user_id       Int?
   rating        Int
   title         String?
   body          String
@@ -169,7 +169,7 @@ model Review {
   is_deleted    Boolean        @default(false)
   created_at    DateTime       @default(now())
   product       Product        @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user          User?          @relation(fields: [user_id], references: [id], onDelete: SetNull)
 
   @@unique([product_id, user_id])
 }
@@ -189,13 +189,13 @@ model Notification {
 model ProductQuestion {
   id            Int            @id @default(autoincrement())
   product_id    Int
-  user_id       Int
+  user_id       Int?
   question      String
   answer        String?
   answered_at   DateTime?
   created_at    DateTime       @default(now())
   product       Product        @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user          User?          @relation(fields: [user_id], references: [id], onDelete: SetNull)
 }
 
 model StoreSubscription {
@@ -208,3 +208,10 @@ model StoreSubscription {
 
   @@unique([user_id, store_id])
 }
+
+model SiteVisit {
+  id          Int      @id @default(autoincrement())
+  ip_address  String
+  visited_at  DateTime @default(now())
+}
+
