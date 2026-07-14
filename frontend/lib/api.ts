@@ -448,3 +448,34 @@ export async function checkStoreSubscription(storeId: number): Promise<{ is_subs
   const res = await api.get(`/store/${storeId}/is-subscribed`);
   return res.data;
 }
+
+export async function pingAnalyticsVisit(): Promise<void> {
+  try {
+    await api.post("/analytics/visit");
+  } catch {
+    // Non-critical, ignore
+  }
+}
+
+export async function fetchAdminAnalytics(): Promise<any> {
+  const res = await api.get("/admin/analytics");
+  return res.data;
+}
+
+export async function fetchAdminUsers(): Promise<User[]> {
+  const res = await api.get<User[]>("/admin/users");
+  return res.data;
+}
+
+export async function adminDeleteUser(userId: number): Promise<void> {
+  await api.delete(`/admin/users/${userId}`);
+}
+
+export async function adminDeleteReview(reviewId: number): Promise<void> {
+  await api.delete(`/admin/reviews/${reviewId}`);
+}
+
+export async function adminDeleteQuestion(questionId: number): Promise<void> {
+  await api.delete(`/admin/questions/${questionId}`);
+}
+
