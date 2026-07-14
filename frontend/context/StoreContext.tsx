@@ -237,6 +237,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     loadProducts();
     loadSession();
+    import("@/lib/api").then(({ pingAnalyticsVisit }) => {
+      pingAnalyticsVisit();
+    });
   }, []);
 
   useEffect(() => {

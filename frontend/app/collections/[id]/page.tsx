@@ -10,7 +10,9 @@ import {
   fetchProductQuestions,
   postReview,
   postQuestion,
-  checkCanReview
+  checkCanReview,
+  adminDeleteReview,
+  adminDeleteQuestion
 } from "@/lib/api";
 import type { Review, ProductQuestion } from "@/types";
 import {
@@ -24,7 +26,8 @@ import {
   ChevronRight,
   MessageSquare,
   ThumbsUp,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from "lucide-react";
 
 export default function InspectionWindow() {
@@ -157,6 +160,26 @@ export default function InspectionWindow() {
       alert(err?.response?.data?.detail || "Failed to post question");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleAdminDeleteReview = async (reviewId: number) => {
+    if (!confirm("Are you sure you want to delete this review?")) return;
+    try {
+      await adminDeleteReview(reviewId);
+      setReviews(reviews.filter((r) => r.id !== reviewId));
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || "Failed to delete review");
+    }
+  };
+
+  const handleAdminDeleteQuestion = async (questionId: number) => {
+    if (!confirm("Are you sure you want to delete this question?")) return;
+    try {
+      await adminDeleteQuestion(questionId);
+      setQuestions(questions.filter((q) => q.id !== questionId));
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || "Failed to delete question");
     }
   };
 
@@ -498,6 +521,15 @@ export default function InspectionWindow() {
                               <Star key={s} size={12} fill={s <= review.rating ? "currentColor" : "transparent"} className={s <= review.rating ? "" : "text-slate-200"} />
                             ))}
                           </div>
+                          {user?.role === "admin" && (
+                            <button
+                              onClick={() => handleAdminDeleteReview(review.id)}
+                              className="text-red-500 hover:text-red-600 p-1 ml-4 transition-colors"
+                              title="Delete Review (Admin)"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                         <div className="text-sm text-slate-600 mt-2">
                           {review.is_deleted ? (
@@ -565,6 +597,15 @@ export default function InspectionWindow() {
                             <p className="font-medium text-sm text-slate-900">{q.question}</p>
                             <p className="text-[10px] font-bold text-slate-400 mt-1">{q.user_name} • {new Date(q.created_at).toLocaleDateString()}</p>
                           </div>
+                          {user?.role === "admin" && (
+                            <button
+                              onClick={() => handleAdminDeleteQuestion(q.id)}
+                              className="text-red-500 hover:text-red-600 p-1 ml-auto self-start transition-colors"
+                              title="Delete Question (Admin)"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                         {q.answer ? (
                           <div className="flex gap-3 ml-4 pl-4 border-l-2 border-blue-100">

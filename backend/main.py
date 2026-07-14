@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import CORS_ORIGINS
-from routers import products, orders, chat, auth, cart, store, seller, reviews, notifications
+from routers import products, orders, chat, auth, cart, store, seller, reviews, notifications, admin, analytics
 
 
 import asyncio
@@ -49,6 +49,8 @@ app.include_router(store.router)
 app.include_router(seller.router)
 app.include_router(reviews.router)
 app.include_router(notifications.router)
+app.include_router(admin.router)
+app.include_router(analytics.router)
 
 
 @app.get("/health", tags=["Health"])
