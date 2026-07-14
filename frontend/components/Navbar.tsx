@@ -272,6 +272,15 @@ export default function Navbar({
                     </p>
                     <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
                   </div>
+                  {user?.role === "admin" && (
+                    <Link
+                      href="/admin/dashboard"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-indigo-600 hover:bg-indigo-50 transition-colors border-b border-slate-100"
+                    >
+                      <User size={16} /> Admin Dashboard
+                    </Link>
+                  )}
                   {user?.has_store ? (
                     <Link
                       href="/seller/dashboard"
