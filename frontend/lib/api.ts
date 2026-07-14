@@ -14,7 +14,7 @@ import type {
   SellerNotification,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://agentic-ai-ecommerce-store-production.up.railway.app";
 const TOKEN_KEY = "hdwear_token";
 const GUEST_CART_KEY = "hdwear_guest_cart";
 const STORED_USER_KEY = "hdwear_user";
